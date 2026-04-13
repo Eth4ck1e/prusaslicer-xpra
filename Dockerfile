@@ -34,6 +34,11 @@ RUN git clone --depth 1 --branch ${PRUSA_VERSION} \
 
 WORKDIR /prusa
 
+# Patch broken/unreachable download URLs before building deps.
+# gmplib.org port 443 is closed — use the GNU FTP mirror instead.
+RUN find deps -name "*.cmake" -exec \
+    sed -i 's|https://gmplib.org/download/gmp/|https://ftp.gnu.org/gnu/gmp/|g' {} +
+
 # Build bundled third-party deps first (slow, but cached as its own layer).
 # Use Ninja to avoid make jobserver issues with ExternalProject (e.g. OCCT).
 RUN --mount=type=cache,target=/ccache \
