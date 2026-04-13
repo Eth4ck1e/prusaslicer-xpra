@@ -5,36 +5,75 @@ TMPDIR="$(mktemp -d)"
 GITHUB_TOKEN="${2:-}"
 
 if [ -n "$GITHUB_TOKEN" ]; then
-  curl -SsL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-    https://api.github.com/repos/prusa3d/PrusaSlicer/releases/latest > $TMPDIR/latest.json
+  CURL_AUTH=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
 else
-  curl -SsL \
-    https://api.github.com/repos/prusa3d/PrusaSlicer/releases/latest > $TMPDIR/latest.json
+  CURL_AUTH=()
 fi
 
-# Validate we got a real response, not a rate-limit or error message
-if jq -e '.message' $TMPDIR/latest.json > /dev/null 2>&1; then
+# Fetch the last 20 releases and find the most recent one that has a Linux AppImage.
+# (Some releases are Windows/macOS only — e.g. PrusaSlicer 2.9.4 shipped no Linux build.)
+curl -SsL "${CURL_AUTH[@]}" \
+  "https://api.github.com/repos/prusa3d/PrusaSlicer/releases?per_page=20" > "$TMPDIR/releases.json"
+
+# Validate we got a real response
+if jq -e '.message' "$TMPDIR/releases.json" > /dev/null 2>&1; then
   echo "ERROR: GitHub API returned an error:" >&2
-  jq -r '.message' $TMPDIR/latest.json >&2
+  jq -r '.message' "$TMPDIR/releases.json" >&2
   exit 1
 fi
 
-# Try older-distros GTK3 first (broader compatibility), fall back to standard GTK3
-url=$(jq -r '[.assets[] | select(.browser_download_url | test("linux-x64-older-distros-GTK3.*\\.AppImage$"))] | .[0].browser_download_url' $TMPDIR/latest.json)
-name=$(jq -r '[.assets[] | select(.browser_download_url | test("linux-x64-older-distros-GTK3.*\\.AppImage$"))] | .[0].name' $TMPDIR/latest.json)
+# Walk releases in order (newest first) and pick the first with a Linux AppImage.
+# Prefer older-distros-GTK3 variant; fall back to standard GTK3.
+url=$(jq -r '
+  .[] |
+  .assets[] |
+  select(.browser_download_url | test("linux-x64-older-distros-GTK3.*\\.AppImage$")) |
+  .browser_download_url
+' "$TMPDIR/releases.json" | head -1)
 
+name=$(jq -r '
+  .[] |
+  .assets[] |
+  select(.browser_download_url | test("linux-x64-older-distros-GTK3.*\\.AppImage$")) |
+  .name
+' "$TMPDIR/releases.json" | head -1)
+
+version=$(jq -r '
+  .[] |
+  select(.assets[].browser_download_url | test("linux-x64-older-distros-GTK3.*\\.AppImage$")) |
+  .tag_name
+' "$TMPDIR/releases.json" | head -1)
+
+# Fall back to standard GTK3 AppImage if older-distros variant not found
 if [ -z "$url" ] || [ "$url" = "null" ]; then
-  url=$(jq -r '[.assets[] | select(.browser_download_url | test("linux-x64-GTK3.*\\.AppImage$"))] | .[0].browser_download_url' $TMPDIR/latest.json)
-  name=$(jq -r '[.assets[] | select(.browser_download_url | test("linux-x64-GTK3.*\\.AppImage$"))] | .[0].name' $TMPDIR/latest.json)
+  url=$(jq -r '
+    .[] |
+    .assets[] |
+    select(.browser_download_url | test("linux-x64-GTK3.*\\.AppImage$")) |
+    .browser_download_url
+  ' "$TMPDIR/releases.json" | head -1)
+
+  name=$(jq -r '
+    .[] |
+    .assets[] |
+    select(.browser_download_url | test("linux-x64-GTK3.*\\.AppImage$")) |
+    .name
+  ' "$TMPDIR/releases.json" | head -1)
+
+  version=$(jq -r '
+    .[] |
+    select(.assets[].browser_download_url | test("linux-x64-GTK3.*\\.AppImage$")) |
+    .tag_name
+  ' "$TMPDIR/releases.json" | head -1)
 fi
 
 if [ -z "$url" ] || [ "$url" = "null" ]; then
-  echo "ERROR: Could not find a PrusaSlicer AppImage in the latest release assets:" >&2
-  jq -r '.assets[].name' $TMPDIR/latest.json >&2
+  echo "ERROR: Could not find a Linux AppImage in the last 20 PrusaSlicer releases." >&2
+  jq -r '.[].tag_name' "$TMPDIR/releases.json" >&2
   exit 1
 fi
 
-version=$(jq -r .tag_name $TMPDIR/latest.json)
+echo "Found PrusaSlicer ${version} Linux AppImage" >&2
 
 request=$1
 
