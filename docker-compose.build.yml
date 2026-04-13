@@ -3,7 +3,11 @@ version: "2.1"
 services:
   prusaslicer-novnc:
     image: ghcr.io/eth4ck1e/prusaslicer-novnc:latest
-    build: .
+    platform: linux/amd64
+    build:
+      context: .
+      platforms:
+        - linux/amd64
     environment:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - DISPLAY=:0
