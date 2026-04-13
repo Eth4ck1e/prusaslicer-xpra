@@ -12,7 +12,7 @@ ARG PRUSA_VERSION=main
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git cmake build-essential pkg-config ccache \
+    git cmake build-essential pkg-config ccache ca-certificates \
     libgtk-3-dev libwxgtk3.0-gtk3-dev \
     libgl1-mesa-dev libglu1-mesa-dev \
     libcurl4-openssl-dev libssl-dev \
