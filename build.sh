@@ -6,7 +6,7 @@ set -e
 IMAGE="prusaslicer-novnc:local"
 
 echo "Building ${IMAGE} for linux/amd64..."
-docker buildx build \
+BUILDKIT_STEP_LOG_MAX_SIZE=-1 docker buildx build \
   --platform linux/amd64 \
   --progress=plain \
   --load \
