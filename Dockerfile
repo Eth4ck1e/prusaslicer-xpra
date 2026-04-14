@@ -73,7 +73,8 @@ RUN --mount=type=cache,target=/ccache \
       -DSLIC3R_FHS=1 \
       -DSLIC3R_DESKTOP_INTEGRATION=0 \
       -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build -j4
+    && cmake --build build -j4 \
+    && cmake --install build --prefix /prusa-install
 
 # ─────────────────────────────────────────────
 # Stage 2: Runtime image
@@ -118,9 +119,9 @@ RUN wget -qO /tmp/virtualgl_${VIRTUALGL_VERSION}_amd64.deb https://packagecloud.
     && dpkg -i /tmp/turbovnc_${TURBOVNC_VERSION}_amd64.deb \
     && rm -rf /tmp/*.deb
 
-# Copy compiled PrusaSlicer binary and resources from builder stage
-COPY --from=builder /prusa/build/src/prusa-slicer /usr/local/bin/prusa-slicer
-COPY --from=builder /prusa/resources /usr/share/prusa-slicer/resources
+# Copy installed PrusaSlicer binary and resources from builder stage
+COPY --from=builder /prusa-install/bin/prusa-slicer /usr/local/bin/prusa-slicer
+COPY --from=builder /prusa-install/share/PrusaSlicer /usr/local/share/PrusaSlicer
 
 # Create slic3r user and set up directories
 RUN groupadd slic3r \
