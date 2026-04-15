@@ -30,9 +30,13 @@
     Description="Persistent storage for PrusaSlicer configuration and profiles."
     Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/prusaslicer/configs</Config>
 
-  <Config Name="Prints Output" Target="/prints/" Default="/mnt/user/appdata/prusaslicer/prints"
-    Description="Directory where sliced files (G-code) are saved."
-    Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/prusaslicer/prints</Config>
+  <Config Name="Prints Output" Target="/prints/" Default=""
+    Description="Optional. Where G-code files are saved. Leave blank to keep files inside the container — this is fine if you use Prusa Connect to send prints directly to your printer. Map to an Unraid share (e.g. /mnt/user/3dprinting/prints) if you need network access to exported G-code."
+    Type="Path" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="Models" Target="/models/" Default=""
+    Description="Optional. Where STL/3MF model files are stored. Leave blank to keep files inside the container — the built-in Printables browser works without this. Map to an Unraid share (e.g. /mnt/user/3dprinting/models) if you want to drop files from other machines."
+    Type="Path" Display="always" Required="false" Mask="false"></Config>
 
   <!-- GPU device passthrough (Intel Arc via /dev/dri/) -->
   <Config Name="GPU Device" Target="/dev/dri/" Default="/dev/dri/"

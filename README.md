@@ -91,10 +91,11 @@ Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software re
 
 ## Volumes
 
-| Path | Description |
-|---|---|
-| `/configs/` | PrusaSlicer configuration, profiles, and settings (persist this) |
-| `/prints/` | Sliced G-code output directory |
+| Path | Required | Description |
+|---|---|---|
+| `/configs/` | Yes | PrusaSlicer configuration, profiles, and settings — always persist this |
+| `/prints/` | No | G-code output directory. Leave unmapped if you use Prusa Connect to send prints directly to your printer. Map to a share if you need network access to exported G-code. |
+| `/models/` | No | STL/3MF input files. Leave unmapped if you use the built-in Printables browser. Map to a share if you want to drop files from other machines on your network. |
 
 ---
 

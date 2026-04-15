@@ -62,16 +62,17 @@ COPY --from=builder /usr/local/share/PrusaSlicer /usr/local/share/PrusaSlicer
 # Create slic3r user and set up directories
 RUN groupadd slic3r \
     && useradd -g slic3r --create-home --home-dir /home/slic3r slic3r \
-    && mkdir -p /configs /prints \
+    && mkdir -p /configs /prints /models \
     && locale-gen en_US
 
 # Set up config symlinks and bookmarks
 RUN mkdir -p /configs/.local /configs/.config \
     && ln -s /configs/.config/ /home/slic3r/ \
     && mkdir -p /home/slic3r/.config/ \
-    && echo "XDG_DOWNLOAD_DIR=\"/prints/\"" >> /home/slic3r/.config/user-dirs.dirs \
+    && echo "XDG_DOWNLOAD_DIR=\"/models/\"" >> /home/slic3r/.config/user-dirs.dirs \
+    && echo "file:///models models" >> /home/slic3r/.gtk-bookmarks \
     && echo "file:///prints prints" >> /home/slic3r/.gtk-bookmarks \
-    && chown -R slic3r:slic3r /home/slic3r/ /prints/ /configs/
+    && chown -R slic3r:slic3r /home/slic3r/ /prints/ /models/ /configs/
 
 # Generate key for noVNC and cleanup errors
 RUN openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/novnc.pem -out /etc/novnc.pem -days 3650 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
@@ -104,6 +105,7 @@ RUN sed -i 's|exec $MOZ_LIBDIR/$MOZ_APP_NAME "$@"|if [ -n "$ENABLEHWGPU" ] \&\& 
 
 VOLUME /configs/
 VOLUME /prints/
+VOLUME /models/
 
 # Report healthy once noVNC is accepting connections
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \

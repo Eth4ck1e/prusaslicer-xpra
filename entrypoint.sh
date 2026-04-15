@@ -49,5 +49,13 @@ fi
 
 export SUPD_LOGLEVEL="${SUPD_LOGLEVEL:-INFO}"
 
+# Pre-seed PrusaSlicer's last output path to /prints/ so the G-code export
+# dialog opens there on first launch. Only sets if not already configured.
+PRUSA_APP_CONFIG="/configs/.config/PrusaSlicer/PrusaSlicer.ini"
+if [ ! -f "$PRUSA_APP_CONFIG" ] || ! grep -q "^last_output_path" "$PRUSA_APP_CONFIG" 2>/dev/null; then
+  mkdir -p "$(dirname "$PRUSA_APP_CONFIG")"
+  echo "last_output_path=/prints/" >> "$PRUSA_APP_CONFIG"
+fi
+
 # fix perms and launch supervisor with the above environment variables
 chown -R slic3r:slic3r /home/slic3r/ /configs/ /prints/ /dev/stdout && exec gosu slic3r supervisord -e $SUPD_LOGLEVEL
