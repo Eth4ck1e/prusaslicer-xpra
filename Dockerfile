@@ -105,4 +105,8 @@ RUN sed -i 's|exec $MOZ_LIBDIR/$MOZ_APP_NAME "$@"|if [ -n "$ENABLEHWGPU" ] \&\& 
 VOLUME /configs/
 VOLUME /prints/
 
+# Report healthy once noVNC is accepting connections
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fs http://localhost:8080/ > /dev/null || exit 1
+
 ENTRYPOINT ["/entrypoint.sh"]

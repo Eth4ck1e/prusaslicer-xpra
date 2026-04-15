@@ -47,7 +47,7 @@ else
   export VGL_DISPLAY="${VGL_DISPLAY:-egl}"
 fi
 
-export SUPD_LOGLEVEL="${SUPD_LOGLEVEL:-TRACE}"
+export SUPD_LOGLEVEL="${SUPD_LOGLEVEL:-INFO}"
 
 # fix perms and launch supervisor with the above environment variables
 chown -R slic3r:slic3r /home/slic3r/ /configs/ /prints/ /dev/stdout && exec gosu slic3r supervisord -e $SUPD_LOGLEVEL

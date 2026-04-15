@@ -35,6 +35,10 @@ jobs:
         id: owner
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      - name: Get PrusaSlicer version from Dockerfile
+        id: prusa
+        run: echo "version=$(grep '^ARG PRUSA_VERSION=' Dockerfile | head -1 | cut -d= -f2)" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -47,4 +51,5 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc:latest
+            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc:${{ steps.prusa.outputs.version }}
             ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc:${{ steps.date.outputs.date }}
