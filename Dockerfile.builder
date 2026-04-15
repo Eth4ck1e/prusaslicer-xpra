@@ -8,7 +8,7 @@ ARG UBUNTU_VERSION=22.04
 FROM ubuntu:${UBUNTU_VERSION}
 
 # Git tag to build. Override at build time: --build-arg PRUSA_VERSION=version_2.9.4
-ARG PRUSA_VERSION=version_2.8.1
+ARG PRUSA_VERSION=version_2.9.4
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
