@@ -1,94 +1,182 @@
-# Prusaslicer noVNC Docker Container
+# PrusaSlicer noVNC — Docker for Unraid
 
-## Overview
+PrusaSlicer running in your browser via noVNC. Fork of [helfrichmichael/prusaslicer-novnc](https://github.com/helfrichmichael/prusaslicer-novnc) rebuilt for Intel Arc GPU support, compiled from source, and extended with AMD and NVIDIA GPU support.
 
-This is a super basic noVNC build using supervisor to serve Prusaslicer in your favorite web browser. This was primarily built for users using the [popular unraid NAS software](https://unraid.net), to allow them to quickly hop in a browser, slice, and upload their favorite 3D prints.
+**Image:** `ghcr.io/eth4ck1e/prusaslicer-novnc:latest`
 
-A lot of this was branched off of dmagyar's awesome [prusaslicer-vnc-docker](https://hub.docker.com/r/dmagyar/prusaslicer-vnc-docker/) project, but I found it to be a bit complex for my needs and thought this approach would simplify things a lot.
+---
 
-## How to use
+## Quick Start — Unraid
 
-### In unraid
+1. In the Unraid Docker tab, click **Add Container**
+2. In the **Template** dropdown, select **prusaslicer-novnc** (if you have the template installed — see below)
+3. Set your GPU vendor under **GPU Vendor** (`intel`, `amd`, or `nvidia`)
+4. Click **Apply**
+5. Open `http://<unraid-ip>:8383` in your browser
 
-If you're using unraid, open your Docker page and under `Template repositories`, add `https://github.com/helfrichmichael/unraid-templates` and save it. You should then be able to Add Container for prusaslicer-novnc. For unraid, the template will default to 6080 for the noVNC web instance.
+### Installing the template
 
-### Outside of unraid
+SSH into your Unraid server and run:
 
-#### Docker
-To run this image, you can run the following command: `docker run --detach --volume=prusaslicer-novnc-data:/configs/ --volume=prusaslicer-novnc-prints:/prints/ -p 8080:8080 -e SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt" 
---name=prusaslicer-novnc mikeah/prusaslicer-novnc`
-
-This will bind `/configs/` in the container to a local volume on my machine named `prusaslicer-novnc-data`. Additionally it will bind `/prints/` in the container to `superslicer-novnc-prints` locally on my machine, it will bind port `8080` to `8080`, and finally, it will provide an environment variable to keep Prusaslicer happy by providing an `SSL_CERT_FILE`.
-
-#### Docker Compose
-To use the pre-built image, simply clone this repository or copy `docker-compose.yml` and run `docker compose up -d`.
-
-To build a new image, clone this repository and run `docker compose up -f docker-compose.build.yml --build -d`
-
-### Using a VNC Viewer
-
-To use a VNC viewer with the container, the default port for TurobVNC is 5900. You can add this port by adding `-p 5900:5900` to your command to start the container to open this port for access. See note below about ports related to `VNC_PORT` environment variable. 
-
-
-### GPU Acceleration/Passthrough
-
-Like other Docker containers, you can pass your Nvidia GPU into the container using the `NVIDIA_VISIBLE_DEVICES` and `NVIDIA_DRIVER_CAPABILITIES` envs. You can define these using the value of `all` or by providing more narrow and specific values. This has only been tested on Nvidia GPUs.
-
-In unraid you can set these values during set up, **additionally, please add the "Extra Parameters" with `--runtime=nvidia` to ensure the GPU passes through**. For containers outside of unraid, you can set this by adding the following params or similar  `-e NVIDIA_DRIVER_CAPABILITIES="all" NVIDIA_VISIBLE_DEVICES="all"`. If using Docker Compose, uncomment the enviroment variables in the relevant docker-compose.yaml file.
-
-In addition to the information above, to enable **Hardware 3D acceleration** (which helps with visualizing complex models and  sliced layers), you must set an environment variable. You can do this by either adding `-e ENABLEHWGPU=true` to the `docker run` command or including `- ENABLEHWGPU=true` in your Docker Compose configuration.
-
-Once enabled and started you can verify the GPU is being used by running `nvidia-smi -l` on the HOST machine and you should see `/slic3r/slic3r-dist/bin/prusa-slicer` as process using the GPU. 
-
-```
-+---------------------------------------------------------------------------------------+
-| NVIDIA-SMI 535.161.07             Driver Version: 535.161.07   CUDA Version: 12.2     |
-|-----------------------------------------+----------------------+----------------------+
-
-.. removed for brevity .. 
-
-+---------------------------------------------------------------------------------------+
-| Processes:                                                                            |
-|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
-|        ID   ID                                                             Usage      |
-|=======================================================================================|
-|    0   N/A  N/A   4129827      G   /slic3r/slic3r-dist/bin/prusa-slicer        262MiB |
-+---------------------------------------------------------------------------------------+
-
-*some information above was edited for privacy
+```bash
+wget -O /boot/config/plugins/dockerMan/templates-user/prusaslicer-novnc.xml \
+  https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml
 ```
 
-The `GL Version` on the System Information screen inside the slicer should also show, the GPU model and driver version
+Then refresh the Docker page and the template will appear in the dropdown.
 
-<img src="https://github.com/vajonam/prusaslicer-novnc/assets/152501/250c93f5-e550-42f9-8cce-b942c93ef61e" width="300" />
+---
 
+## GPU Setup
 
+### Intel Arc / Intel Gen9+ (default)
 
-### Other Environment Variables
+Pass through `/dev/dri/` in the Unraid template (default) and set:
 
-Below are the default values for various environment variables:
+| Variable | Value |
+|---|---|
+| `ENABLEHWGPU` | `true` |
+| `GPU_VENDOR` | `intel` |
+| `LIBVA_DRIVER_NAME` | `iHD` |
 
-- `DISPLAY=:0`: Sets the DISPLAY variable (usually left as 0).
-- `SUPD_LOGLEVEL=INFO`: Specifies the log level for supervisord. Set to `TRACE` to see output for various commands helps if you are debugging something. See superviosrd manual for possible levels.
-- `ENABLEHWGPU=`: Enables HW 3D acceleration. Default is `false` to maintain backward compatability.
-- `VGL_DISPLAY=egl`: Advanced setting to target specific cards if you have multiple GPUs
-- `NOVNC_PORT=8080`: Sets the port for the noVNC HTML5/web interface.
-- `VNC_RESOLUTION=1280x800`: Defines the resolution of the VNC server.
-- `VNC_PASSWORD=`: Defaults to no VNC password, but you can add one here.
-- `VNC_PORT=5900`: Defines the port for the VNC server, allowing direct connections using a VNC client. Note that the `DISPLAY` number is added to the port number (e.g., if your display is :1, the VNC port accepting connections will be `5901`).
+To find your GPU device path in Unraid: **Tools → System Devices** or run `ls /dev/dri/` in the Unraid terminal.
+
+> For older Intel GPUs (Gen8 and below), set `LIBVA_DRIVER_NAME=i965`.
+
+### AMD
+
+Pass through `/dev/dri/` and set:
+
+| Variable | Value |
+|---|---|
+| `ENABLEHWGPU` | `true` |
+| `GPU_VENDOR` | `amd` |
+| `LIBVA_DRIVER_NAME` | `radeonsi` |
+
+### NVIDIA
+
+NVIDIA GPUs are handled by the [Unraid NVIDIA plugin](https://forums.unraid.net/topic/98978-plugin-nvidia-driver/) rather than `/dev/dri/`. Remove the **GPU Device** field from the template and set:
+
+| Variable | Value |
+|---|---|
+| `ENABLEHWGPU` | `true` |
+| `GPU_VENDOR` | `nvidia` |
+| `NVIDIA_VISIBLE_DEVICES` | `all` (or a specific GPU UUID) |
+
+The NVIDIA Container Toolkit mounts the GPU drivers automatically — no additional packages are needed in the container.
+
+### No GPU
+
+Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software rendering mode.
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `ENABLEHWGPU` | _(unset)_ | Set to `true` to enable VirtualGL GPU acceleration |
+| `GPU_VENDOR` | `intel` | GPU driver stack: `intel`, `amd`, or `nvidia` |
+| `VNC_RESOLUTION` | `1280x800` | Virtual desktop resolution (e.g. `1920x1080`) |
+| `VNC_PASSWORD` | _(unset)_ | Optional VNC session password |
+| `VGL_DISPLAY` | `egl` | VirtualGL display backend — `egl` works for all GPU types |
+| `LIBVA_DRIVER_NAME` | `iHD` | VA-API driver: `iHD` (Intel Arc/Gen9+), `i965` (older Intel), `radeonsi` (AMD) |
+| `NVIDIA_VISIBLE_DEVICES` | _(unset)_ | NVIDIA only: `all` or a specific GPU UUID |
+| `DISPLAY` | `:0` | X display number — do not change unless you know what you are doing |
+| `NOVNC_PORT` | `8080` | Internal noVNC port (the container always listens on 8080; map the host port in the template) |
+| `VNC_PORT` | `5900` | Internal TurboVNC port for direct VNC client connections |
+| `SUPD_LOGLEVEL` | `INFO` | supervisord log verbosity: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL` |
+
+---
+
+## Volumes
+
+| Path | Description |
+|---|---|
+| `/configs/` | PrusaSlicer configuration, profiles, and settings (persist this) |
+| `/prints/` | Sliced G-code output directory |
+
+---
+
+## Running Outside Unraid
+
+### Docker
+
+```bash
+docker run -d \
+  --name prusaslicer-novnc \
+  -p 8383:8080 \
+  -v prusaslicer-configs:/configs/ \
+  -v prusaslicer-prints:/prints/ \
+  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+```
+
+Then open `http://localhost:8383`.
+
+With Intel GPU passthrough:
+
+```bash
+docker run -d \
+  --name prusaslicer-novnc \
+  -p 8383:8080 \
+  -v prusaslicer-configs:/configs/ \
+  -v prusaslicer-prints:/prints/ \
+  --device /dev/dri/ \
+  -e ENABLEHWGPU=true \
+  -e GPU_VENDOR=intel \
+  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+```
+
+### Docker Compose
+
+```bash
+docker compose up -d
+```
+
+### VNC Client
+
+To connect with a dedicated VNC client instead of the browser, expose port 5900:
+
+```bash
+-p 5900:5900
+```
+
+Then connect your VNC client to `<host>:5900`.
+
+---
+
+## Build System
+
+This repo uses a two-image build strategy to keep CI fast:
+
+| Image | Trigger | Time | Purpose |
+|---|---|---|---|
+| `prusaslicer-novnc-builder:<version>` | Manual / auto-bump | ~90 min | Compiles PrusaSlicer from source |
+| `prusaslicer-novnc:latest` | Every push to main | ~3 min | Adds noVNC/VNC/supervisord stack |
+
+### Building locally
+
+```bash
+# Build runtime image only (requires pre-built builder image on GHCR)
+./build.sh
+
+# Build PrusaSlicer from source (slow — only needed for version bumps)
+./build.sh builder
+```
+
+### Version bumps
+
+PrusaSlicer version updates are handled automatically: a daily GitHub Actions workflow checks for new upstream releases and, if found, commits a version bump and triggers a full rebuild. No manual intervention required.
+
+To bump manually, go to **Actions → Build PrusaSlicer** and run the workflow with the desired version tag (e.g. `version_2.9.4`).
+
+---
 
 ## Links
 
-[Prusaslicer](https://www.prusa3d.com/prusaslicer/)
-
-[TruboVNC](https://www.turbovnc.org/)
-
-[VirtualGL](https://virtualgl.org/)
-
-[Supervisor](http://supervisord.org/)
-
-[GitHub Source](https://github.com/helfrichmichael/prusaslicer-novnc)
-
-[Docker](https://hub.docker.com/r/mikeah/prusaslicer-novnc)
-
-<a href="https://www.buymeacoffee.com/helfrichmichael" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+- [PrusaSlicer](https://www.prusa3d.com/prusaslicer/)
+- [TurboVNC](https://www.turbovnc.org/)
+- [VirtualGL](https://virtualgl.org/)
+- [noVNC](https://novnc.com/)
+- [supervisord](http://supervisord.org/)
+- [Original fork — helfrichmichael/prusaslicer-novnc](https://github.com/helfrichmichael/prusaslicer-novnc)
