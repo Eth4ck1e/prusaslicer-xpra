@@ -18,14 +18,30 @@ fi
 export LOCALFBPORT=$((${VNC_PORT} + DISPLAY_NUMBER))
 
 # GPU acceleration setup
-# ENABLEHWGPU=true enables VirtualGL (vglrun) for OpenGL acceleration via the passed-in GPU device.
-# For Intel Arc, set VGL_DISPLAY to egl (default) and ensure /dev/dri/ is passed through.
+# ENABLEHWGPU=true  — enables VirtualGL (vglrun) for OpenGL acceleration
+# GPU_VENDOR        — selects the GPU driver stack (intel | amd | nvidia)
+#                     intel (default): iHD VA-API, /dev/dri/ passthrough
+#                     amd:             radeonsi VA-API, /dev/dri/ passthrough
+#                     nvidia:          NVIDIA EGL via NVIDIA Container Toolkit,
+#                                      set NVIDIA_VISIBLE_DEVICES in container config
 if [ -n "$ENABLEHWGPU" ] && [ "$ENABLEHWGPU" = "true" ]; then
   export VGLRUN="/usr/bin/vglrun"
-  # Allow overriding VGL_DISPLAY; default to egl which works with Intel/Mesa
   export VGL_DISPLAY="${VGL_DISPLAY:-egl}"
-  # Set Intel VA-API driver if not already specified
-  export LIBVA_DRIVER_NAME="${LIBVA_DRIVER_NAME:-iHD}"
+
+  GPU_VENDOR="${GPU_VENDOR:-intel}"
+  case "$GPU_VENDOR" in
+    nvidia)
+      # NVIDIA libs are mounted by the NVIDIA Container Toolkit at runtime.
+      # No VA-API driver needed; NVIDIA_DRIVER_CAPABILITIES must include graphics.
+      export NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-all}"
+      ;;
+    amd)
+      export LIBVA_DRIVER_NAME="${LIBVA_DRIVER_NAME:-radeonsi}"
+      ;;
+    intel|*)
+      export LIBVA_DRIVER_NAME="${LIBVA_DRIVER_NAME:-iHD}"
+      ;;
+  esac
 else
   export VGLRUN=
   export VGL_DISPLAY="${VGL_DISPLAY:-egl}"

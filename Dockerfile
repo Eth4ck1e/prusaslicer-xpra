@@ -1,80 +1,12 @@
 ARG UBUNTU_VERSION=22.04
+ARG PRUSA_VERSION=2.9.4
 
 # ─────────────────────────────────────────────
-# Stage 1: Build PrusaSlicer from source
+# Pull pre-built PrusaSlicer from the builder image.
+# To update PrusaSlicer, run the build-prusaslicer.yml workflow first,
+# then bump PRUSA_VERSION here.
 # ─────────────────────────────────────────────
-FROM ubuntu:${UBUNTU_VERSION} AS builder
-
-# Git tag to build. Defaults to latest release tag.
-# Override at build time: --build-arg PRUSA_VERSION=version_2.8.1
-ARG PRUSA_VERSION=version_2.9.4
-
-ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git cmake build-essential pkg-config ccache ca-certificates ninja-build \
-    autoconf automake libtool texinfo \
-    libgtk-3-dev libwxgtk3.0-gtk3-dev \
-    libgl1-mesa-dev libglu1-mesa-dev \
-    libcurl4-openssl-dev libssl-dev \
-    libudev-dev libdbus-1-dev \
-    libwebkit2gtk-4.0-dev \
-    libtbb-dev \
-    zlib1g-dev libjpeg-dev libpng-dev libtiff-dev \
-    libboost-all-dev \
-    python3 wget curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# ccache persists compiled objects across builds via BuildKit cache mount.
-# Even if a layer is invalidated, unchanged files won't be recompiled.
-ENV CCACHE_DIR=/ccache \
-    CMAKE_C_COMPILER_LAUNCHER=ccache \
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-
-RUN git clone --depth 1 --branch ${PRUSA_VERSION} \
-    https://github.com/prusa3d/PrusaSlicer.git /prusa
-
-WORKDIR /prusa
-
-# Patch broken/unreachable download URLs before building deps.
-# 1. gmplib.org port 443 is closed — use the GNU FTP mirror.
-# 2. libtiff GitLab zip has an unstable hash (GitLab regenerates archives) —
-#    replace with the official stable tarball from download.osgeo.org and
-#    clear the expected hash so CMake accepts whatever is served.
-RUN find deps -name "*.cmake" -exec \
-      sed -i 's|https://gmplib.org/download/gmp/|https://ftp.gnu.org/gnu/gmp/|g' {} + \
-    && if [ -f deps/TIFF/TIFF.cmake ]; then \
-         sed -i \
-           's|https://gitlab.com/libtiff/libtiff/-/archive/v4.6.0/libtiff-v4.6.0.zip|https://download.osgeo.org/libtiff/tiff-4.6.0.tar.gz|g' \
-           deps/TIFF/TIFF.cmake \
-         && sed -i \
-           's|5d652432123223338a6ee642a6499d98ebc5a702f8a065571e1001d4c08c37e6||g' \
-           deps/TIFF/TIFF.cmake; \
-       fi
-
-# Build bundled third-party deps first (slow, but cached as its own layer).
-# Use Ninja to avoid make jobserver issues with ExternalProject (e.g. OCCT).
-# Linking is RAM-heavy — cap at 4 parallel jobs to avoid OOM.
-RUN --mount=type=cache,target=/ccache \
-    cmake deps -B build_deps -G Ninja -DDEP_WX_GTK3=ON \
-    && cmake --build build_deps -j4
-
-# Build PrusaSlicer itself.
-RUN --mount=type=cache,target=/ccache \
-    cmake . -B build -G Ninja \
-      -DCMAKE_PREFIX_PATH=/prusa/build_deps/destdir/usr/local \
-      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-      -DSLIC3R_STATIC=1 \
-      -DSLIC3R_GTK=3 \
-      -DSLIC3R_PCH=OFF \
-      -DSLIC3R_FHS=1 \
-      -DSLIC3R_DESKTOP_INTEGRATION=0 \
-      -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build -j4 \
-    && cmake --install build --prefix /prusa-install
+FROM ghcr.io/eth4ck1e/prusaslicer-novnc-builder:${PRUSA_VERSION} AS builder
 
 # ─────────────────────────────────────────────
 # Stage 2: Runtime image
@@ -86,7 +18,7 @@ ARG VIRTUALGL_VERSION=3.1.1-20240228
 ARG TURBOVNC_VERSION=3.1.1-20240127
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install runtime dependencies + Mesa/Intel GPU support
+# Install runtime dependencies + Mesa/GPU support
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget xorg xauth gosu supervisor x11-xserver-utils \
     locales-all libpam0g libxt6 libxext6 dbus-x11 xauth x11-xkb-utils xkb-data python3 xterm novnc \
@@ -94,12 +26,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     freeglut3 libgtk2.0-dev libwxgtk3.0-gtk3-dev libwx-perl libxmu-dev \
     xdg-utils locales locales-all pcmanfm jq curl git bzip2 gpg-agent software-properties-common \
     openssl \
-    # Mesa OpenGL / Intel GPU support
+    # Mesa OpenGL / Intel + AMD GPU support
     libgl1-mesa-glx libgl1-mesa-dri libegl1-mesa libegl-mesa0 \
     mesa-vulkan-drivers libvulkan1 \
+    mesa-va-drivers \
     libva2 libva-drm2 libva-x11-2 vainfo \
+    # Intel Arc VA-API driver
     intel-media-va-driver \
-    libdrm2 libdrm-intel1 \
+    libdrm2 libdrm-intel1 libdrm-amdgpu1 \
     # Runtime libs needed by compiled PrusaSlicer
     libgtk-3-0 libglu1-mesa libcurl4 libtbb2 libdbus-1-3 \
     libwebkit2gtk-4.0-dev \

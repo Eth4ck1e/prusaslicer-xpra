@@ -1,16 +1,16 @@
-name: Publish to GHCR
+name: Build PrusaSlicer (slow — run only on version bumps)
 
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * 5' # Every Friday at midnight
   workflow_dispatch:
+    inputs:
+      prusa_version:
+        description: 'PrusaSlicer git tag (e.g. version_2.9.4)'
+        required: true
+        default: 'version_2.9.4'
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to GitHub Container Registry
+  build_prusaslicer:
+    name: Build and push PrusaSlicer builder image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,24 +27,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get current date/time
-        id: date
-        run: echo "date=$(date +'%Y.%m.%d.%H%M%S')" >> $GITHUB_OUTPUT
-
       - name: Set lowercase repo owner
         id: owner
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      - name: Strip leading 'version_' prefix for image tag
+        id: version
+        run: echo "tag=$(echo '${{ github.event.inputs.prusa_version }}' | sed 's/^version_//')" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push builder image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.builder
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PRUSA_VERSION=${{ github.event.inputs.prusa_version }}
           tags: |
-            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc:latest
-            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc:${{ steps.date.outputs.date }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc-builder:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc-builder:latest

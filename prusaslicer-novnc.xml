@@ -44,6 +44,10 @@
     Description="Set to true to enable VirtualGL GPU acceleration via the passed-in GPU device. Requires GPU Device to be set."
     Type="Variable" Display="always" Required="false" Mask="false">true</Config>
 
+  <Config Name="GPU Vendor" Target="GPU_VENDOR" Default="intel"
+    Description="GPU driver stack to use when ENABLEHWGPU is true. intel: Intel Arc/Gen9+ via /dev/dri/ (default). amd: AMD via /dev/dri/. nvidia: NVIDIA via NVIDIA Container Toolkit — set NVIDIA_VISIBLE_DEVICES below and remove the GPU Device field."
+    Type="Variable" Display="always" Required="false" Mask="false">intel</Config>
+
   <Config Name="VNC Resolution" Target="VNC_RESOLUTION" Default="1920x1080"
     Description="Resolution of the virtual desktop (e.g. 1920x1080, 2560x1440)."
     Type="Variable" Display="always" Required="false" Mask="false">1920x1080</Config>
@@ -51,6 +55,10 @@
   <Config Name="VNC Password" Target="VNC_PASSWORD" Default=""
     Description="Optional password to protect the VNC session. Leave blank for no password."
     Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default=""
+    Description="NVIDIA only: set to 'all' or a specific GPU UUID to pass through an NVIDIA GPU. Requires the Unraid NVIDIA plugin. Leave blank for Intel/AMD."
+    Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 
   <Config Name="VGL Display" Target="VGL_DISPLAY" Default="egl"
     Description="VirtualGL display backend. Use 'egl' for Intel/Mesa GPU passthrough."
