@@ -59,7 +59,6 @@ RUN HTML=$(find /usr/share/xpra/www -maxdepth 1 -name "index.html" | head -1) &&
 #   on-screen before the first client connects and triggers a resize
 # - Disable opengl forwarding (we use VirtualGL for that, not xpra's path)
 RUN mkdir -p /etc/xpra/conf.d && cat > /etc/xpra/conf.d/99-docker.conf << 'EOF'
-desktop-display-size = 1920x1080
 opengl = no
 EOF
 

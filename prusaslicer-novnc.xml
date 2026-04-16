@@ -72,9 +72,9 @@
     Description="Intel VA-API driver name. Use 'iHD' for Intel Arc/Gen9+ (recommended). Use 'i965' for older Intel GPUs."
     Type="Variable" Display="advanced" Required="false" Mask="false">iHD</Config>
 
-  <Config Name="Display" Target="DISPLAY" Default=":0"
+  <Config Name="Display" Target="DISPLAY" Default=":10"
     Description="X display number. Do not change unless you know what you are doing."
-    Type="Variable" Display="advanced" Required="false" Mask="false">:0</Config>
+    Type="Variable" Display="advanced" Required="false" Mask="false">:10</Config>
 
   <Config Name="Supervisor Log Level" Target="SUPD_LOGLEVEL" Default="INFO"
     Description="Log verbosity for supervisord. Options: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL."

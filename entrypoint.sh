@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-export DISPLAY=${DISPLAY:-:0}
+export DISPLAY=${DISPLAY:-:10}
 export NOVNC_PORT=${NOVNC_PORT:-8080}
 export VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
 
