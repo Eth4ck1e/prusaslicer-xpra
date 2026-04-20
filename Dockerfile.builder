@@ -54,6 +54,10 @@ RUN find deps -name "*.cmake" -exec \
            deps/TIFF/TIFF.cmake; \
        fi
 
+# Remove +UNKNOWN from the build ID — version.inc hardcodes it unconditionally
+# and a plain set() shadows any -DSLIC3R_BUILD_ID cmake flag.
+RUN sed -i 's/+UNKNOWN//' version.inc
+
 # Build bundled third-party deps first (slow, but cached as its own layer).
 RUN --mount=type=cache,target=/ccache \
     cmake deps -B build_deps -G Ninja -DDEP_WX_GTK3=ON \
