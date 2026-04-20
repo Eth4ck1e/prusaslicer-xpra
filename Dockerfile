@@ -38,9 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen en_US \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Xpra + HTML5 client from xpra.org (latest stable)
+# Install Xpra + HTML5 client from xpra.org (beta channel — contains coordinate mismatch fixes)
 RUN wget -q https://xpra.org/gpg.asc -O- | gpg --dearmor > /usr/share/keyrings/xpra.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ jammy main" \
+    && echo "deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ jammy beta" \
        > /etc/apt/sources.list.d/xpra.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends xpra xpra-x11 xpra-html5 \
