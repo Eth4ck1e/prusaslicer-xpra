@@ -44,7 +44,7 @@ RUN wget -q https://xpra.org/gpg.asc -O- | gpg --dearmor > /usr/share/keyrings/x
     && printf 'deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ jammy beta\ndeb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ jammy main\n' \
        > /etc/apt/sources.list.d/xpra.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends xpra xpra-html5 \
+    && apt-get install -y --no-install-recommends xpra xpra-x11 xpra-html5 \
     && rm -rf /var/lib/apt/lists/*
 
 # Pin the xpra HTML5 floating toolbar to top-right by default.
