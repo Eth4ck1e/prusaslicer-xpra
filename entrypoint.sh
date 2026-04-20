@@ -8,7 +8,7 @@ rm -f /tmp/.X11-unix/X*
 
 export DISPLAY=${DISPLAY:-:10}
 export NOVNC_PORT=${NOVNC_PORT:-8080}
-export VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
+export VNC_RESOLUTION=${VNC_RESOLUTION:-1280x800}
 
 # GPU acceleration setup
 # ENABLEHWGPU=true  — enables VirtualGL (vglrun) for OpenGL acceleration

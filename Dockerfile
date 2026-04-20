@@ -53,6 +53,9 @@ RUN HTML=$(find /usr/share/xpra/www -maxdepth 1 -name "index.html" | head -1) &&
       's|</head>|<style>#toolbar,#xpra_toolbar,.toolbar,.xpra-toolbar{right:8px!important;left:auto!important;top:8px!important;}</style></head>|' \
       "$HTML" || true
 
+# Replace xpra's default favicon with the PrusaSlicer icon.
+COPY icons/prusaslicer-32x32.png /usr/share/xpra/www/favicon.png
+
 # Xpra server config:
 # - Set a sensible initial virtual display size so PrusaSlicer windows open
 #   on-screen before the first client connects and triggers a resize
