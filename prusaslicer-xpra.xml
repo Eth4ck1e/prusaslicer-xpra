@@ -11,7 +11,7 @@
   <Project>https://github.com/Eth4ck1e/prusaslicer-xpra</Project>
   <Overview>PrusaSlicer running directly in your browser via Xpra HTML5. Supports Intel Arc, AMD, and NVIDIA GPU acceleration.</Overview>
   <Category>Tools: MediaApp:Other</Category>
-  <WebUI>http://[IP]:[PORT:8080]/index.html?floating_menu=false&amp;keyboard=false</WebUI>
+  <WebUI>http://[IP]:[PORT:8080]/index.html?floating_menu=false&amp;keyboard=false&amp;toolbar=0</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/icons/prusaslicer-96x96.png</Icon>
   <ExtraParams/>
