@@ -96,7 +96,7 @@ Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software re
 | `LIBVA_DRIVER_NAME` | `iHD` | VA-API driver: `iHD` (Intel Arc/Gen9+), `i965` (older Intel), `radeonsi` (AMD) |
 | `NVIDIA_VISIBLE_DEVICES` | _(unset)_ | NVIDIA only: `all` or a specific GPU UUID |
 | `DISPLAY` | `:10` | X display number — do not change unless you know what you are doing |
-| `NOVNC_PORT` | `8080` | Internal port the Xpra HTML5 server listens on (map the host port in the template) |
+| `XPRA_PORT` | `8080` | Internal port the Xpra HTML5 server listens on (map the host port in the template) |
 | `SUPD_LOGLEVEL` | `INFO` | supervisord log verbosity: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL` |
 
 ---
@@ -152,7 +152,7 @@ This repo uses a two-stage build to keep CI fast:
 
 | Image | Trigger | Build time | Purpose |
 |---|---|---|---|
-| `prusaslicer-novnc-builder:<version>` | Manual / auto-bump | ~90 min | Compiles PrusaSlicer from source |
+| `prusaslicer-xpra-builder:<version>` | Manual / auto-bump | ~90 min | Compiles PrusaSlicer from source |
 | `prusaslicer-xpra:latest` | Every push to main | ~3 min | Packages the runtime (Xpra, VirtualGL, GPU drivers) |
 
 ### Building locally

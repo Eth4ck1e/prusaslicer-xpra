@@ -21,7 +21,7 @@
   <Requires/>
 
   <!-- Xpra web port -->
-  <Config Name="noVNC Web Port" Target="8080" Default="8383" Mode="tcp"
+  <Config Name="Xpra Web Port" Target="8080" Default="8383" Mode="tcp"
     Description="Port to access PrusaSlicer in the browser via Xpra HTML5."
     Type="Port" Display="always" Required="true" Mask="false">8383</Config>
 

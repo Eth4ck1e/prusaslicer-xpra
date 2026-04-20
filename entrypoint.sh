@@ -7,7 +7,7 @@ rm -f /tmp/.X*-lock
 rm -f /tmp/.X11-unix/X*
 
 export DISPLAY=${DISPLAY:-:10}
-export NOVNC_PORT=${NOVNC_PORT:-8080}
+export XPRA_PORT=${XPRA_PORT:-8080}
 export VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
 
 # GPU acceleration setup
@@ -76,7 +76,7 @@ exec xpra start ${DISPLAY} \\
   --start-child="/bin/bash -c 'sleep 2 && ${PRUSA_CMD}'" \\
   --exit-with-children=yes \\
   --html=on \\
-  --bind-tcp=0.0.0.0:${NOVNC_PORT} \\
+  --bind-tcp=0.0.0.0:${XPRA_PORT} \\
   --session-name=PrusaSlicer \\
   ${XPRA_AUTH_ARGS} \\
   --no-daemon \\

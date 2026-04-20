@@ -4,13 +4,13 @@
 #
 # Usage:
 #   ./build.sh          — build the runtime image only (fast, ~3 min)
-#                         requires ghcr.io/eth4ck1e/prusaslicer-novnc-builder:<version> to exist
+#                         requires ghcr.io/eth4ck1e/prusaslicer-xpra-builder:<version> to exist
 #   ./build.sh builder  — build the PrusaSlicer builder image (slow, ~90 min)
 #                         run this first when bumping the PrusaSlicer version
 set -e
 
 PRUSA_VERSION="2.9.4"
-BUILDER_IMAGE="ghcr.io/eth4ck1e/prusaslicer-novnc-builder:${PRUSA_VERSION}"
+BUILDER_IMAGE="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${PRUSA_VERSION}"
 RUNTIME_IMAGE="prusaslicer-xpra:local"
 
 if [ "${1}" = "builder" ]; then

@@ -31,21 +31,21 @@ After that, no further action is needed — updates are automatic.
 
 ## Forum Post Draft
 
-**Subject / first line:** Template submission: PrusaSlicer noVNC
+**Subject / first line:** Template submission: PrusaSlicer Xpra
 
 ---
 
 Hi, I'd like to submit a template for Community Applications.
 
-**Container:** PrusaSlicer noVNC
+**Container:** PrusaSlicer Xpra
 **GitHub repo:** https://github.com/Eth4ck1e/prusaslicer-xpra
 **Template URL:** https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml
 **Image:** `ghcr.io/eth4ck1e/prusaslicer-xpra:latest`
 
 **Description:**
-PrusaSlicer running in the browser via noVNC. Fork of helfrichmichael/prusaslicer-novnc
-rebuilt with Intel Arc GPU support, compiled from source (latest release auto-updated),
-and extended with AMD and NVIDIA GPU support.
+PrusaSlicer running directly in the browser via Xpra HTML5 — no VNC client required.
+Compiled from source (latest release auto-updated), with Intel Arc, AMD, and NVIDIA
+GPU acceleration support via VirtualGL.
 
 **GPU support:**
 - Intel Arc / Gen9+: `/dev/dri/` passthrough, `GPU_VENDOR=intel` (default)
@@ -54,7 +54,7 @@ and extended with AMD and NVIDIA GPU support.
 - No GPU: software rendering (no passthrough needed)
 
 **Key template fields:**
-- noVNC web port (default 8383)
+- Xpra web port (default 8383)
 - `/configs/` and `/prints/` volume mounts
 - `ENABLEHWGPU`, `GPU_VENDOR`, `VNC_RESOLUTION`, `VNC_PASSWORD`
 - Advanced: `VGL_DISPLAY`, `LIBVA_DRIVER_NAME`, `NVIDIA_VISIBLE_DEVICES`, `DISPLAY`, `SUPD_LOGLEVEL`
