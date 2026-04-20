@@ -52,9 +52,9 @@
     Description="GPU driver stack to use when ENABLEHWGPU is true. intel: Intel Arc/Gen9+ via /dev/dri/ (default). amd: AMD via /dev/dri/. nvidia: NVIDIA via NVIDIA Container Toolkit — set NVIDIA_VISIBLE_DEVICES below and remove the GPU Device field."
     Type="Variable" Display="always" Required="false" Mask="false">intel</Config>
 
-  <Config Name="VNC Resolution" Target="VNC_RESOLUTION" Default="1280x800"
-    Description="Resolution of the virtual desktop (e.g. 1280x800, 1920x1080). Lower values keep windows on-screen before the browser resizes the display."
-    Type="Variable" Display="always" Required="false" Mask="false">1280x800</Config>
+  <Config Name="VNC Resolution" Target="VNC_RESOLUTION" Default="1920x1080"
+    Description="Resolution of the virtual Xvfb display (e.g. 1920x1080, 2560x1440). The browser will resize the display to match the viewport once connected."
+    Type="Variable" Display="always" Required="false" Mask="false">1920x1080</Config>
 
   <Config Name="VNC Password" Target="VNC_PASSWORD" Default=""
     Description="Optional password to protect the VNC session. Leave blank for no password."

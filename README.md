@@ -90,7 +90,7 @@ Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software re
 |---|---|---|
 | `ENABLEHWGPU` | _(unset)_ | Set to `true` to enable VirtualGL GPU acceleration |
 | `GPU_VENDOR` | `intel` | GPU driver stack: `intel`, `amd`, or `nvidia` |
-| `VNC_RESOLUTION` | `1280x800` | Virtual display resolution. Lower values keep windows on-screen before the browser resizes the display. |
+| `VNC_RESOLUTION` | `1920x1080` | Virtual display resolution passed to Xvfb at startup. |
 | `VNC_PASSWORD` | _(unset)_ | Optional password to protect the session |
 | `VGL_DISPLAY` | `egl` | VirtualGL display backend — `egl` works for all GPU types |
 | `LIBVA_DRIVER_NAME` | `iHD` | VA-API driver: `iHD` (Intel Arc/Gen9+), `i965` (older Intel), `radeonsi` (AMD) |
