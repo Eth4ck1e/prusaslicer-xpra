@@ -1,28 +1,28 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>PrusaSlicer-noVNC</Name>
-  <Repository>ghcr.io/eth4ck1e/prusaslicer-novnc:latest</Repository>
-  <Registry>https://github.com/Eth4ck1e/prusaslicer-novnc/pkgs/container/prusaslicer-novnc</Registry>
+  <Name>PrusaSlicer-xpra</Name>
+  <Repository>ghcr.io/eth4ck1e/prusaslicer-xpra:latest</Repository>
+  <Registry>https://github.com/Eth4ck1e/prusaslicer-xpra/pkgs/container/prusaslicer-xpra</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/Eth4ck1e/prusaslicer-novnc</Support>
-  <Project>https://github.com/Eth4ck1e/prusaslicer-novnc</Project>
-  <Overview>PrusaSlicer running in your browser via noVNC. Fork of helfrichmichael/prusaslicer-novnc with Intel Arc GPU support.</Overview>
+  <Support>https://github.com/Eth4ck1e/prusaslicer-xpra</Support>
+  <Project>https://github.com/Eth4ck1e/prusaslicer-xpra</Project>
+  <Overview>PrusaSlicer running directly in your browser via Xpra HTML5. Supports Intel Arc, AMD, and NVIDIA GPU acceleration.</Overview>
   <Category>Tools: MediaApp:Other</Category>
   <WebUI>http://[IP]:[PORT:8080]/index.html?floating_menu=false&amp;keyboard=false</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/icons/prusaslicer-96x96.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/icons/prusaslicer-96x96.png</Icon>
   <ExtraParams/>
   <DateInstalled/>
   <DonateText/>
   <DonateLink/>
   <Requires/>
 
-  <!-- noVNC web port -->
+  <!-- Xpra web port -->
   <Config Name="noVNC Web Port" Target="8080" Default="8383" Mode="tcp"
-    Description="Port to access PrusaSlicer in the browser via noVNC."
+    Description="Port to access PrusaSlicer in the browser via Xpra HTML5."
     Type="Port" Display="always" Required="true" Mask="false">8383</Config>
 
   <!-- Volumes -->

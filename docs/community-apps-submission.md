@@ -13,7 +13,7 @@ repositories. Once your repo is registered:
 **The key field:** `<TemplateURL>` must point to the raw GitHub URL of your template XML.
 Ours is already set to:
 ```
-https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml
+https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml
 ```
 
 ---
@@ -38,9 +38,9 @@ After that, no further action is needed — updates are automatic.
 Hi, I'd like to submit a template for Community Applications.
 
 **Container:** PrusaSlicer noVNC
-**GitHub repo:** https://github.com/Eth4ck1e/prusaslicer-novnc
-**Template URL:** https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml
-**Image:** `ghcr.io/eth4ck1e/prusaslicer-novnc:latest`
+**GitHub repo:** https://github.com/Eth4ck1e/prusaslicer-xpra
+**Template URL:** https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml
+**Image:** `ghcr.io/eth4ck1e/prusaslicer-xpra:latest`
 
 **Description:**
 PrusaSlicer running in the browser via noVNC. Fork of helfrichmichael/prusaslicer-novnc
@@ -68,7 +68,7 @@ are released upstream. Thanks!
 
 Template updates require **no re-submission** after initial registration. Just:
 
-1. Edit `prusaslicer-novnc.xml` in this repo
+1. Edit `prusaslicer-xpra.xml` in this repo
 2. Commit and push to `main`
 3. CA will pick up the changes on its next sync (usually within 24 hours)
 

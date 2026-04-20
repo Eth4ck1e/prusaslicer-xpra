@@ -1,8 +1,8 @@
 ---
 version: "2.1"
 services:
-  prusaslicer-novnc:
-    image: ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+  prusaslicer-xpra:
+    image: ghcr.io/eth4ck1e/prusaslicer-xpra:latest
     platform: linux/amd64
     build:
       context: .

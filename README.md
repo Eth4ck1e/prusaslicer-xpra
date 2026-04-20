@@ -4,14 +4,14 @@ PrusaSlicer running directly in your browser via [Xpra HTML5](https://xpra.org/)
 
 GPU acceleration is supported for Intel Arc, AMD, and NVIDIA via VirtualGL.
 
-**Image:** `ghcr.io/eth4ck1e/prusaslicer-novnc:latest`
+**Image:** `ghcr.io/eth4ck1e/prusaslicer-xpra:latest`
 
 ---
 
 ## Quick Start — Unraid
 
 1. In the Unraid Docker tab, click **Add Container**
-2. In the **Template** dropdown, select **prusaslicer-novnc** (see template install below)
+2. In the **Template** dropdown, select **prusaslicer-xpra** (see template install below)
 3. Set your GPU vendor under **GPU Vendor** (`intel`, `amd`, or `nvidia`)
 4. Click **Apply**
 5. Open `http://<unraid-ip>:8383` in your browser — PrusaSlicer loads directly in the tab
@@ -21,8 +21,8 @@ GPU acceleration is supported for Intel Arc, AMD, and NVIDIA via VirtualGL.
 SSH into your Unraid server and run:
 
 ```bash
-wget -O /boot/config/plugins/dockerMan/templates-user/prusaslicer-novnc.xml \
-  https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml
+wget -O /boot/config/plugins/dockerMan/templates-user/prusaslicer-xpra.xml \
+  https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml
 ```
 
 Then refresh the Docker page and the template will appear in the dropdown.
@@ -120,7 +120,7 @@ docker run -d \
   --name prusaslicer \
   -p 8383:8080 \
   -v prusaslicer-configs:/configs/ \
-  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+  ghcr.io/eth4ck1e/prusaslicer-xpra:latest
 ```
 
 Then open `http://localhost:8383`.
@@ -135,7 +135,7 @@ docker run -d \
   --device /dev/dri/ \
   -e ENABLEHWGPU=true \
   -e GPU_VENDOR=intel \
-  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+  ghcr.io/eth4ck1e/prusaslicer-xpra:latest
 ```
 
 ### Docker Compose
@@ -153,13 +153,13 @@ This repo uses a two-stage build to keep CI fast:
 | Image | Trigger | Build time | Purpose |
 |---|---|---|---|
 | `prusaslicer-novnc-builder:<version>` | Manual / auto-bump | ~90 min | Compiles PrusaSlicer from source |
-| `prusaslicer-novnc:latest` | Every push to main | ~3 min | Packages the runtime (Xpra, VirtualGL, GPU drivers) |
+| `prusaslicer-xpra:latest` | Every push to main | ~3 min | Packages the runtime (Xpra, VirtualGL, GPU drivers) |
 
 ### Building locally
 
 ```bash
 # Build runtime image (requires pre-built builder on GHCR)
-docker build -t prusaslicer-novnc:local .
+docker build -t prusaslicer-xpra:local .
 ```
 
 ### Version bumps

@@ -49,14 +49,14 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           if [ "$BRANCH" = "main" ]; then
             echo "tags<<EOF" >> $GITHUB_OUTPUT
-            echo "ghcr.io/${OWNER}/prusaslicer-novnc:latest" >> $GITHUB_OUTPUT
-            echo "ghcr.io/${OWNER}/prusaslicer-novnc:${VERSION}" >> $GITHUB_OUTPUT
-            echo "ghcr.io/${OWNER}/prusaslicer-novnc:${DATE}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/${OWNER}/prusaslicer-xpra:latest" >> $GITHUB_OUTPUT
+            echo "ghcr.io/${OWNER}/prusaslicer-xpra:${VERSION}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/${OWNER}/prusaslicer-xpra:${DATE}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "tags<<EOF" >> $GITHUB_OUTPUT
-            echo "ghcr.io/${OWNER}/prusaslicer-novnc:${BRANCH}" >> $GITHUB_OUTPUT
-            echo "ghcr.io/${OWNER}/prusaslicer-novnc:${BRANCH}-${DATE}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/${OWNER}/prusaslicer-xpra:${BRANCH}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/${OWNER}/prusaslicer-xpra:${BRANCH}-${DATE}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
