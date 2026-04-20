@@ -1,28 +1,28 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>PrusaSlicer-noVNC</Name>
-  <Repository>ghcr.io/eth4ck1e/prusaslicer-novnc:latest</Repository>
-  <Registry>https://github.com/Eth4ck1e/prusaslicer-novnc/pkgs/container/prusaslicer-novnc</Registry>
+  <Name>PrusaSlicer-xpra</Name>
+  <Repository>ghcr.io/eth4ck1e/prusaslicer-xpra:latest</Repository>
+  <Registry>https://github.com/Eth4ck1e/prusaslicer-xpra/pkgs/container/prusaslicer-xpra</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/Eth4ck1e/prusaslicer-novnc</Support>
-  <Project>https://github.com/Eth4ck1e/prusaslicer-novnc</Project>
-  <Overview>PrusaSlicer running in your browser via noVNC. Fork of helfrichmichael/prusaslicer-novnc with Intel Arc GPU support.</Overview>
+  <Support>https://github.com/Eth4ck1e/prusaslicer-xpra</Support>
+  <Project>https://github.com/Eth4ck1e/prusaslicer-xpra</Project>
+  <Overview>PrusaSlicer running directly in your browser via Xpra HTML5. Supports Intel Arc, AMD, and NVIDIA GPU acceleration.</Overview>
   <Category>Tools: MediaApp:Other</Category>
-  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/icons/prusaslicer-96x96.png</Icon>
+  <WebUI>http://[IP]:[PORT:8080]/index.html?floating_menu=false&amp;keyboard=false</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/icons/prusaslicer-96x96.png</Icon>
   <ExtraParams/>
   <DateInstalled/>
   <DonateText/>
   <DonateLink/>
   <Requires/>
 
-  <!-- noVNC web port -->
+  <!-- Xpra web port -->
   <Config Name="noVNC Web Port" Target="8080" Default="8383" Mode="tcp"
-    Description="Port to access PrusaSlicer in the browser via noVNC."
+    Description="Port to access PrusaSlicer in the browser via Xpra HTML5."
     Type="Port" Display="always" Required="true" Mask="false">8383</Config>
 
   <!-- Volumes -->
@@ -52,9 +52,9 @@
     Description="GPU driver stack to use when ENABLEHWGPU is true. intel: Intel Arc/Gen9+ via /dev/dri/ (default). amd: AMD via /dev/dri/. nvidia: NVIDIA via NVIDIA Container Toolkit — set NVIDIA_VISIBLE_DEVICES below and remove the GPU Device field."
     Type="Variable" Display="always" Required="false" Mask="false">intel</Config>
 
-  <Config Name="VNC Resolution" Target="VNC_RESOLUTION" Default="1920x1080"
-    Description="Resolution of the virtual desktop (e.g. 1920x1080, 2560x1440)."
-    Type="Variable" Display="always" Required="false" Mask="false">1920x1080</Config>
+  <Config Name="VNC Resolution" Target="VNC_RESOLUTION" Default="1280x800"
+    Description="Resolution of the virtual desktop (e.g. 1280x800, 1920x1080). Lower values keep windows on-screen before the browser resizes the display."
+    Type="Variable" Display="always" Required="false" Mask="false">1280x800</Config>
 
   <Config Name="VNC Password" Target="VNC_PASSWORD" Default=""
     Description="Optional password to protect the VNC session. Leave blank for no password."
@@ -72,9 +72,9 @@
     Description="Intel VA-API driver name. Use 'iHD' for Intel Arc/Gen9+ (recommended). Use 'i965' for older Intel GPUs."
     Type="Variable" Display="advanced" Required="false" Mask="false">iHD</Config>
 
-  <Config Name="Display" Target="DISPLAY" Default=":0"
+  <Config Name="Display" Target="DISPLAY" Default=":10"
     Description="X display number. Do not change unless you know what you are doing."
-    Type="Variable" Display="advanced" Required="false" Mask="false">:0</Config>
+    Type="Variable" Display="advanced" Required="false" Mask="false">:10</Config>
 
   <Config Name="Supervisor Log Level" Target="SUPD_LOGLEVEL" Default="INFO"
     Description="Log verbosity for supervisord. Options: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL."

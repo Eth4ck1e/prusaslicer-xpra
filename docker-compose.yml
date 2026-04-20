@@ -1,9 +1,9 @@
 ---
 version: "2.1"
 services:
-  prusaslicer-novnc:
-    image: ghcr.io/eth4ck1e/prusaslicer-novnc:latest
-    container_name: prusaslicer-novnc
+  prusaslicer-xpra:
+    image: ghcr.io/eth4ck1e/prusaslicer-xpra:latest
+    container_name: prusaslicer-xpra
     environment:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - DISPLAY=:0

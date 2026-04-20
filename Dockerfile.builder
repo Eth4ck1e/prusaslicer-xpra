@@ -70,7 +70,7 @@ RUN --mount=type=cache,target=/ccache \
       -DSLIC3R_PCH=OFF \
       -DSLIC3R_FHS=1 \
       -DSLIC3R_DESKTOP_INTEGRATION=0 \
-      -DSLIC3R_BUILD_ID=noVNC \
+      -DSLIC3R_BUILD_ID=xpra \
       -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build -j4 \
     && cmake --install build --prefix /prusa-install

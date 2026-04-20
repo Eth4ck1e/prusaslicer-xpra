@@ -11,7 +11,7 @@ set -e
 
 PRUSA_VERSION="2.9.4"
 BUILDER_IMAGE="ghcr.io/eth4ck1e/prusaslicer-novnc-builder:${PRUSA_VERSION}"
-RUNTIME_IMAGE="prusaslicer-novnc:local"
+RUNTIME_IMAGE="prusaslicer-xpra:local"
 
 if [ "${1}" = "builder" ]; then
   echo "Building PrusaSlicer builder image (slow — ~90 min)..."

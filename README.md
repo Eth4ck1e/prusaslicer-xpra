@@ -1,29 +1,42 @@
-# PrusaSlicer noVNC — Docker for Unraid
+# PrusaSlicer — Docker for Unraid
 
-PrusaSlicer running in your browser via noVNC. Fork of [helfrichmichael/prusaslicer-novnc](https://github.com/helfrichmichael/prusaslicer-novnc) rebuilt for Intel Arc GPU support, compiled from source, and extended with AMD and NVIDIA GPU support.
+PrusaSlicer running directly in your browser via [Xpra HTML5](https://xpra.org/). PrusaSlicer is compiled from source and delivered as a seamless single-app window — no remote desktop, no VNC client required.
 
-**Image:** `ghcr.io/eth4ck1e/prusaslicer-novnc:latest`
+GPU acceleration is supported for Intel Arc, AMD, and NVIDIA via VirtualGL.
+
+**Image:** `ghcr.io/eth4ck1e/prusaslicer-xpra:latest`
 
 ---
 
 ## Quick Start — Unraid
 
 1. In the Unraid Docker tab, click **Add Container**
-2. In the **Template** dropdown, select **prusaslicer-novnc** (if you have the template installed — see below)
+2. In the **Template** dropdown, select **prusaslicer-xpra** (see template install below)
 3. Set your GPU vendor under **GPU Vendor** (`intel`, `amd`, or `nvidia`)
 4. Click **Apply**
-5. Open `http://<unraid-ip>:8383` in your browser
+5. Open `http://<unraid-ip>:8383` in your browser — PrusaSlicer loads directly in the tab
 
 ### Installing the template
 
 SSH into your Unraid server and run:
 
 ```bash
-wget -O /boot/config/plugins/dockerMan/templates-user/prusaslicer-novnc.xml \
-  https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-novnc/main/prusaslicer-novnc.xml
+wget -O /boot/config/plugins/dockerMan/templates-user/prusaslicer-xpra.xml \
+  https://raw.githubusercontent.com/Eth4ck1e/prusaslicer-xpra/main/prusaslicer-xpra.xml
 ```
 
 Then refresh the Docker page and the template will appear in the dropdown.
+
+---
+
+## Features
+
+- **Browser-native delivery** — Xpra HTML5 streams PrusaSlicer directly to your browser tab as a seamless single window
+- **Clipboard paste** — copy text on your host (e.g. a Prusa account password) and paste it directly into PrusaSlicer with Ctrl+V
+- **File upload** — drag files from your desktop onto the browser tab to open them in PrusaSlicer
+- **GPU acceleration** — Intel Arc, AMD, and NVIDIA supported via VirtualGL + Mesa
+- **Compiled from source** — built directly from the official PrusaSlicer GitHub repo at each version bump
+- **Auto-updates** — daily check for new PrusaSlicer releases; version bumps are committed and built automatically
 
 ---
 
@@ -63,7 +76,7 @@ NVIDIA GPUs are handled by the [Unraid NVIDIA plugin](https://forums.unraid.net/
 | `GPU_VENDOR` | `nvidia` |
 | `NVIDIA_VISIBLE_DEVICES` | `all` (or a specific GPU UUID) |
 
-The NVIDIA Container Toolkit mounts the GPU drivers automatically — no additional packages are needed in the container.
+The NVIDIA Container Toolkit mounts the GPU drivers automatically — no additional packages needed in the container.
 
 ### No GPU
 
@@ -77,14 +90,13 @@ Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software re
 |---|---|---|
 | `ENABLEHWGPU` | _(unset)_ | Set to `true` to enable VirtualGL GPU acceleration |
 | `GPU_VENDOR` | `intel` | GPU driver stack: `intel`, `amd`, or `nvidia` |
-| `VNC_RESOLUTION` | `1280x800` | Virtual desktop resolution (e.g. `1920x1080`) |
-| `VNC_PASSWORD` | _(unset)_ | Optional VNC session password |
+| `VNC_RESOLUTION` | `1280x800` | Virtual display resolution. Lower values keep windows on-screen before the browser resizes the display. |
+| `VNC_PASSWORD` | _(unset)_ | Optional password to protect the session |
 | `VGL_DISPLAY` | `egl` | VirtualGL display backend — `egl` works for all GPU types |
 | `LIBVA_DRIVER_NAME` | `iHD` | VA-API driver: `iHD` (Intel Arc/Gen9+), `i965` (older Intel), `radeonsi` (AMD) |
 | `NVIDIA_VISIBLE_DEVICES` | _(unset)_ | NVIDIA only: `all` or a specific GPU UUID |
-| `DISPLAY` | `:0` | X display number — do not change unless you know what you are doing |
-| `NOVNC_PORT` | `8080` | Internal noVNC port (the container always listens on 8080; map the host port in the template) |
-| `VNC_PORT` | `5900` | Internal TurboVNC port for direct VNC client connections |
+| `DISPLAY` | `:10` | X display number — do not change unless you know what you are doing |
+| `NOVNC_PORT` | `8080` | Internal port the Xpra HTML5 server listens on (map the host port in the template) |
 | `SUPD_LOGLEVEL` | `INFO` | supervisord log verbosity: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL` |
 
 ---
@@ -105,11 +117,10 @@ Leave `ENABLEHWGPU` unset or set to `false`. PrusaSlicer will run in software re
 
 ```bash
 docker run -d \
-  --name prusaslicer-novnc \
+  --name prusaslicer \
   -p 8383:8080 \
   -v prusaslicer-configs:/configs/ \
-  -v prusaslicer-prints:/prints/ \
-  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+  ghcr.io/eth4ck1e/prusaslicer-xpra:latest
 ```
 
 Then open `http://localhost:8383`.
@@ -118,14 +129,13 @@ With Intel GPU passthrough:
 
 ```bash
 docker run -d \
-  --name prusaslicer-novnc \
+  --name prusaslicer \
   -p 8383:8080 \
   -v prusaslicer-configs:/configs/ \
-  -v prusaslicer-prints:/prints/ \
   --device /dev/dri/ \
   -e ENABLEHWGPU=true \
   -e GPU_VENDOR=intel \
-  ghcr.io/eth4ck1e/prusaslicer-novnc:latest
+  ghcr.io/eth4ck1e/prusaslicer-xpra:latest
 ```
 
 ### Docker Compose
@@ -134,35 +144,22 @@ docker run -d \
 docker compose up -d
 ```
 
-### VNC Client
-
-To connect with a dedicated VNC client instead of the browser, expose port 5900:
-
-```bash
--p 5900:5900
-```
-
-Then connect your VNC client to `<host>:5900`.
-
 ---
 
 ## Build System
 
-This repo uses a two-image build strategy to keep CI fast:
+This repo uses a two-stage build to keep CI fast:
 
-| Image | Trigger | Time | Purpose |
+| Image | Trigger | Build time | Purpose |
 |---|---|---|---|
 | `prusaslicer-novnc-builder:<version>` | Manual / auto-bump | ~90 min | Compiles PrusaSlicer from source |
-| `prusaslicer-novnc:latest` | Every push to main | ~3 min | Adds noVNC/VNC/supervisord stack |
+| `prusaslicer-xpra:latest` | Every push to main | ~3 min | Packages the runtime (Xpra, VirtualGL, GPU drivers) |
 
 ### Building locally
 
 ```bash
-# Build runtime image only (requires pre-built builder image on GHCR)
-./build.sh
-
-# Build PrusaSlicer from source (slow — only needed for version bumps)
-./build.sh builder
+# Build runtime image (requires pre-built builder on GHCR)
+docker build -t prusaslicer-xpra:local .
 ```
 
 ### Version bumps
@@ -173,11 +170,17 @@ To bump manually, go to **Actions → Build PrusaSlicer** and run the workflow w
 
 ---
 
+## Credits
+
+Thanks to [helfrichmichael](https://github.com/helfrichmichael) for the original [prusaslicer-novnc](https://github.com/helfrichmichael/prusaslicer-novnc) project that inspired this one.
+
+PrusaSlicer is developed by [Prusa Research](https://www.prusa3d.com/) and is licensed under [AGPL-3.0](https://github.com/prusa3d/PrusaSlicer/blob/master/LICENSE).
+
+---
+
 ## Links
 
 - [PrusaSlicer](https://www.prusa3d.com/prusaslicer/)
-- [TurboVNC](https://www.turbovnc.org/)
+- [Xpra](https://xpra.org/)
 - [VirtualGL](https://virtualgl.org/)
-- [noVNC](https://novnc.com/)
 - [supervisord](http://supervisord.org/)
-- [Original fork — helfrichmichael/prusaslicer-novnc](https://github.com/helfrichmichael/prusaslicer-novnc)

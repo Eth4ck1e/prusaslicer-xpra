@@ -15,16 +15,14 @@ FROM ubuntu:${UBUNTU_VERSION}
 LABEL authors="vajonam, Michael Helfrich - helfrichmichael, Eth4ck1e"
 
 ARG VIRTUALGL_VERSION=3.1.1-20240228
-ARG TURBOVNC_VERSION=3.1.1-20240127
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install runtime dependencies + Mesa/GPU support
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget xorg xauth gosu supervisor x11-xserver-utils \
-    locales-all libpam0g libxt6 libxext6 dbus-x11 xauth x11-xkb-utils xkb-data python3 xterm novnc \
-    lxde gtk2-engines-murrine gnome-themes-standard gtk2-engines-pixbuf gtk2-engines-murrine arc-theme \
-    freeglut3 libgtk2.0-dev libwxgtk3.0-gtk3-dev libwx-perl libxmu-dev \
-    xdg-utils locales locales-all pcmanfm jq curl git bzip2 gpg-agent software-properties-common \
+    wget curl ca-certificates gnupg \
+    xorg xauth gosu supervisor dbus-x11 x11-xserver-utils x11-xkb-utils xkb-data \
+    locales locales-all libpam0g libxt6 libxext6 \
+    xdg-utils jq git bzip2 gpg-agent software-properties-common python3 \
     openssl \
     # Mesa OpenGL / Intel + AMD GPU support
     libgl1-mesa-glx libgl1-mesa-dri libegl1-mesa libegl-mesa0 \
@@ -37,21 +35,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Runtime libs needed by compiled PrusaSlicer
     libgtk-3-0 libglu1-mesa libcurl4 libtbb2 libdbus-1-3 \
     libwebkit2gtk-4.0-dev \
-    && mkdir -p /usr/share/desktop-directories \
-    # Install Firefox without Snap.
-    && add-apt-repository ppa:mozillateam/ppa \
-    && apt update \
-    && apt install -y firefox-esr --no-install-recommends \
-    && apt autoclean -y \
-    && apt autoremove -y \
+    && locale-gen en_US \
     && rm -rf /var/lib/apt/lists/*
 
-# Install VirtualGL and TurboVNC
-RUN wget -qO /tmp/virtualgl_${VIRTUALGL_VERSION}_amd64.deb https://packagecloud.io/dcommander/virtualgl/packages/any/any/virtualgl_${VIRTUALGL_VERSION}_amd64.deb/download.deb?distro_version_id=35 \
-    && wget -qO /tmp/turbovnc_${TURBOVNC_VERSION}_amd64.deb https://packagecloud.io/dcommander/turbovnc/packages/any/any/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download.deb?distro_version_id=35 \
+# Install Xpra + HTML5 client from xpra.org (latest stable)
+RUN wget -q https://xpra.org/gpg.asc -O- | gpg --dearmor > /usr/share/keyrings/xpra.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ jammy main" \
+       > /etc/apt/sources.list.d/xpra.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends xpra xpra-x11 xpra-html5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pin the xpra HTML5 floating toolbar to top-right by default.
+# Targets the most common element IDs/classes across xpra-html5 versions.
+RUN HTML=$(find /usr/share/xpra/www -maxdepth 1 -name "index.html" | head -1) && \
+    [ -n "$HTML" ] && sed -i \
+      's|</head>|<style>#toolbar,#xpra_toolbar,.toolbar,.xpra-toolbar{right:8px!important;left:auto!important;top:8px!important;}</style></head>|' \
+      "$HTML" || true
+
+# Replace xpra's default favicon with the PrusaSlicer icon.
+COPY icons/prusaslicer-32x32.png /usr/share/xpra/www/favicon.png
+
+# Xpra server config:
+# - Set a sensible initial virtual display size so PrusaSlicer windows open
+#   on-screen before the first client connects and triggers a resize
+# - Disable opengl forwarding (we use VirtualGL for that, not xpra's path)
+RUN mkdir -p /etc/xpra/conf.d && cat > /etc/xpra/conf.d/99-docker.conf << 'EOF'
+opengl = no
+EOF
+
+# Install VirtualGL for GPU-accelerated OpenGL rendering
+RUN wget -qO /tmp/virtualgl_${VIRTUALGL_VERSION}_amd64.deb \
+      https://packagecloud.io/dcommander/virtualgl/packages/any/any/virtualgl_${VIRTUALGL_VERSION}_amd64.deb/download.deb?distro_version_id=35 \
     && dpkg -i /tmp/virtualgl_${VIRTUALGL_VERSION}_amd64.deb \
-    && dpkg -i /tmp/turbovnc_${TURBOVNC_VERSION}_amd64.deb \
-    && rm -rf /tmp/*.deb
+    && rm -f /tmp/*.deb
 
 # Copy installed PrusaSlicer binary and resources from builder stage.
 # Resources land in /usr/local/share/PrusaSlicer (build deps prefix), not /prusa-install.
@@ -62,52 +79,28 @@ COPY --from=builder /usr/local/share/PrusaSlicer /usr/local/share/PrusaSlicer
 # Create slic3r user and set up directories
 RUN groupadd slic3r \
     && useradd -g slic3r --create-home --home-dir /home/slic3r slic3r \
-    && mkdir -p /configs /prints /models \
-    && locale-gen en_US
+    && mkdir -p /configs /prints /models
 
-# Set up config symlinks and bookmarks
+# Set up config symlinks and GTK bookmarks
 RUN mkdir -p /configs/.local /configs/.config \
     && ln -s /configs/.config/ /home/slic3r/ \
     && mkdir -p /home/slic3r/.config/ \
     && echo "XDG_DOWNLOAD_DIR=\"/models/\"" >> /home/slic3r/.config/user-dirs.dirs \
     && echo "file:///models models" >> /home/slic3r/.gtk-bookmarks \
     && echo "file:///prints prints" >> /home/slic3r/.gtk-bookmarks \
+    && ln -s /models /home/slic3r/Downloads \
     && chown -R slic3r:slic3r /home/slic3r/ /prints/ /models/ /configs/
 
-# Generate key for noVNC and cleanup errors
-RUN openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/novnc.pem -out /etc/novnc.pem -days 3650 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
-    && rm /etc/xdg/autostart/lxpolkit.desktop \
-    && mv /usr/bin/lxpolkit /usr/bin/lxpolkit.ORIG
-
-ENV PATH=${PATH}:/opt/VirtualGL/bin:/opt/TurboVNC/bin
+ENV PATH=${PATH}:/opt/VirtualGL/bin
 
 ADD entrypoint.sh /entrypoint.sh
 ADD supervisord.conf /etc/
-
-# noVNC index page and icons
-ADD vncresize.html /usr/share/novnc/index.html
-ADD icons/prusaslicer-16x16.png /usr/share/novnc/app/images/icons/novnc-16x16.png
-ADD icons/prusaslicer-24x24.png /usr/share/novnc/app/images/icons/novnc-24x24.png
-ADD icons/prusaslicer-32x32.png /usr/share/novnc/app/images/icons/novnc-32x32.png
-ADD icons/prusaslicer-48x48.png /usr/share/novnc/app/images/icons/novnc-48x48.png
-ADD icons/prusaslicer-60x60.png /usr/share/novnc/app/images/icons/novnc-60x60.png
-ADD icons/prusaslicer-64x64.png /usr/share/novnc/app/images/icons/novnc-64x64.png
-ADD icons/prusaslicer-72x72.png /usr/share/novnc/app/images/icons/novnc-72x72.png
-ADD icons/prusaslicer-76x76.png /usr/share/novnc/app/images/icons/novnc-76x76.png
-ADD icons/prusaslicer-96x96.png /usr/share/novnc/app/images/icons/novnc-96x96.png
-ADD icons/prusaslicer-120x120.png /usr/share/novnc/app/images/icons/novnc-120x120.png
-ADD icons/prusaslicer-144x144.png /usr/share/novnc/app/images/icons/novnc-144x144.png
-ADD icons/prusaslicer-152x152.png /usr/share/novnc/app/images/icons/novnc-152x152.png
-ADD icons/prusaslicer-192x192.png /usr/share/novnc/app/images/icons/novnc-192x192.png
-
-# Set Firefox to run with hardware acceleration when enabled
-RUN sed -i 's|exec $MOZ_LIBDIR/$MOZ_APP_NAME "$@"|if [ -n "$ENABLEHWGPU" ] \&\& [ "$ENABLEHWGPU" = "true" ]; then\n  exec /usr/bin/vglrun $MOZ_LIBDIR/$MOZ_APP_NAME "$@"\nelse\n  exec $MOZ_LIBDIR/$MOZ_APP_NAME "$@"\nfi|g' /usr/bin/firefox-esr
 
 VOLUME /configs/
 VOLUME /prints/
 VOLUME /models/
 
-# Report healthy once noVNC is accepting connections
+# Report healthy once Xpra's web interface is accepting connections
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -fs http://localhost:8080/ > /dev/null || exit 1
 
