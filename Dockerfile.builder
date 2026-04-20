@@ -2,7 +2,7 @@ ARG UBUNTU_VERSION=22.04
 
 # ─────────────────────────────────────────────
 # Builds PrusaSlicer from source and installs to /prusa-install.
-# Push to GHCR with: ghcr.io/eth4ck1e/prusaslicer-novnc-builder:<version>
+# Push to GHCR with: ghcr.io/eth4ck1e/prusaslicer-xpra-builder:<version>
 # Trigger: manual only via build-prusaslicer.yml workflow.
 # ─────────────────────────────────────────────
 FROM ubuntu:${UBUNTU_VERSION}

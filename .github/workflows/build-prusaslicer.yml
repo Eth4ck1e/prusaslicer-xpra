@@ -50,8 +50,8 @@ jobs:
           build-args: |
             PRUSA_VERSION=${{ github.event.inputs.prusa_version }}
           tags: |
-            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc-builder:${{ steps.version.outputs.tag }}
-            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-novnc-builder:latest
+            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-xpra-builder:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/prusaslicer-xpra-builder:latest
 
       - name: Trigger runtime image build
         run: |

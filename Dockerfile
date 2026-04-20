@@ -6,7 +6,7 @@ ARG PRUSA_VERSION=2.9.4
 # To update PrusaSlicer, run the build-prusaslicer.yml workflow first,
 # then bump PRUSA_VERSION here.
 # ─────────────────────────────────────────────
-FROM ghcr.io/eth4ck1e/prusaslicer-novnc-builder:${PRUSA_VERSION} AS builder
+FROM ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${PRUSA_VERSION} AS builder
 
 # ─────────────────────────────────────────────
 # Stage 2: Runtime image
