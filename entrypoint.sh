@@ -82,7 +82,7 @@ exec xpra start ${DISPLAY} \\
   --no-daemon \\
   --sharing=yes \\
   --resize-display=yes \\
-  --desktop-scaling=auto \\
+  --desktop-scaling=1 \\
   --xvfb="Xvfb -screen 0 ${VNC_RESOLUTION}x24 +extension Composite +extension RANDR +extension RENDER -nolisten tcp -noreset" \\
   --dpi=96 \\
   --file-transfer=yes \\
