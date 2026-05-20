@@ -1,5 +1,5 @@
 ARG UBUNTU_VERSION=22.04
-ARG PRUSA_VERSION=2.9.4
+ARG PRUSA_VERSION=2.9.5
 
 # ─────────────────────────────────────────────
 # Pull pre-built PrusaSlicer from the builder image.
