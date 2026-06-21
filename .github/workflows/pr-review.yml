@@ -20,6 +20,9 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  MAX_RETRIES: 3
+
 jobs:
   automated_review:
     name: Run code review checklist
@@ -38,6 +41,7 @@ jobs:
           python-version: '3.11'
 
       - name: Run automated PR review
+        id: review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -45,7 +49,33 @@ jobs:
         run: |
           python3 .github/scripts/pr-review.py
 
+      - name: Run feedback loop (re-request or escalate)
+        id: feedback
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number || github.event.pull_request.number }}
+          MAX_RETRIES: ${{ env.MAX_RETRIES }}
+        run: |
+          python3 .github/scripts/feedback-loop.py
+          if [ -f .github/feedback_result.json ]; then
+            ACTION=$(python3 -c "import json; print(json.load(open('.github/feedback_result.json'))['feedback_action'])")
+            echo "feedback_action=$ACTION" >> $GITHUB_OUTPUT
+          fi
+
       - name: Print review outcome
         if: always()
         run: |
           echo "📋 PR review completed for ${{ github.repository }}#${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
+
+      - name: Report re-request
+        if: steps.feedback.outputs.feedback_action == 're-request'
+        run: |
+          echo "🔄 Fix revision requested — review/retry label updated."
+          echo "   The fix agent should push new commits to the PR branch."
+
+      - name: Report escalation
+        if: steps.feedback.outputs.feedback_action == 'escalated'
+        run: |
+          echo "⛔ Retries exhausted — human intervention required."
+          echo "   Label review/retry-exhausted has been added to the PR."
