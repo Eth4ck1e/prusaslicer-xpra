@@ -40,6 +40,19 @@ jobs:
             echo "Already up to date: ${{ steps.current.outputs.version }}"
           fi
 
+      - name: Check if builder image exists for new version
+        id: check_image
+        if: steps.check.outputs.update == 'true'
+        run: |
+          IMAGE="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${{ steps.latest.outputs.version }}"
+          if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "builder_missing=false" >> "$GITHUB_OUTPUT"
+            echo "✓ Builder image $IMAGE already exists — skipping builder workflow"
+          else
+            echo "builder_missing=true" >> "$GITHUB_OUTPUT"
+            echo "Builder image $IMAGE not found — will build it"
+          fi
+
       - name: Update version in Dockerfiles
         if: steps.check.outputs.update == 'true'
         run: |
@@ -60,7 +73,7 @@ jobs:
           git push
 
       - name: Trigger builder workflow
-        if: steps.check.outputs.update == 'true'
+        if: steps.check.outputs.update == 'true' && steps.check_image.outputs.builder_missing == 'true'
         id: trigger
         run: |
           # Record the current latest run so the wait step can
@@ -76,7 +89,7 @@ jobs:
             -f prusa_version="${{ steps.latest.outputs.tag }}"
 
       - name: Wait for builder workflow to complete
-        if: steps.check.outputs.update == 'true'
+        if: steps.check.outputs.update == 'true' && steps.check_image.outputs.builder_missing == 'true'
         run: |
           BEFORE="${{ steps.trigger.outputs.before }}"
           echo "Pre-dispatch latest run: ${BEFORE}"
