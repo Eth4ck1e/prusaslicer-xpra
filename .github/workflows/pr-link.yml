@@ -1,0 +1,45 @@
+name: PR → Issue Link
+
+on:
+  pull_request_target:
+    types: [opened, closed, reopened]
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    # Skip bot-authored PRs to avoid noisy bot-bot chatter
+    if: >
+      github.actor != 'dependabot[bot]'
+      && github.actor != 'github-actions[bot]'
+      && github.actor != 'renovate[bot]'
+
+    steps:
+      - name: Check out scripts directory
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts/pr_link.py
+          sparse-checkout-cone-mode: false
+
+      - name: Link PR to referenced issue(s)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ toJSON(github.event.pull_request.body) }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: python3 .github/scripts/pr_link.py
+
+      - name: Summary — show what was linked
+        if: always()
+        run: |
+          echo "---"
+          echo "PR #${{ github.event.pull_request.number }} (${{ github.event.action }})"
+          echo "Title: ${{ github.event.pull_request.title }}"
+          echo "Status: ${{ job.status }}"
