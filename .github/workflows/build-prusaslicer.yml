@@ -39,6 +39,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Validate prusa_version tag exists upstream
+        run: |
+          TAG_EXISTS=$(git ls-remote --tags https://github.com/prusa3d/PrusaSlicer.git 'refs/tags/${{ github.event.inputs.prusa_version }}')
+          if [ -z "$TAG_EXISTS" ]; then
+            echo "::error::Invalid prusa_version: tag '${{ github.event.inputs.prusa_version }}' not found upstream at https://github.com/prusa3d/PrusaSlicer.git"
+            exit 1
+          fi
+          echo "✓ Tag ${{ github.event.inputs.prusa_version }} verified upstream"
+
       - name: Build and push builder image
         uses: docker/build-push-action@v7
         with:
