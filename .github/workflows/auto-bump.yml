@@ -61,9 +61,49 @@ jobs:
 
       - name: Trigger builder workflow
         if: steps.check.outputs.update == 'true'
+        id: trigger
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/actions/workflows/build-prusaslicer.yml/dispatches \
-            -d '{"ref":"main","inputs":{"prusa_version":"${{ steps.latest.outputs.tag }}"}}'
+          # Record the current latest run so the wait step can
+          # find the run *we* just dispatched (not a stale one).
+          BEFORE=$(gh run list \
+            --workflow build-prusaslicer.yml \
+            --json databaseId \
+            --jq '.[0].databaseId' \
+            --limit 1 2>/dev/null || echo "0")
+          echo "before=${BEFORE}" >> "$GITHUB_OUTPUT"
+          gh workflow run build-prusaslicer.yml \
+            --ref main \
+            -f prusa_version="${{ steps.latest.outputs.tag }}"
+
+      - name: Wait for builder workflow to complete
+        if: steps.check.outputs.update == 'true'
+        run: |
+          BEFORE="${{ steps.trigger.outputs.before }}"
+          echo "Pre-dispatch latest run: ${BEFORE}"
+
+          # Poll until a *new* run appears
+          echo "Waiting for new builder run to appear..."
+          for i in $(seq 1 12); do
+            RUN_ID=$(gh run list \
+              --workflow build-prusaslicer.yml \
+              --json databaseId \
+              --jq '.[0].databaseId' \
+              --limit 1)
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "$BEFORE" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "$BEFORE" ]; then
+            echo "::error::Builder workflow run did not appear within 60s"
+            exit 1
+          fi
+
+          echo "Watching builder run #${RUN_ID}..."
+          gh run watch "${RUN_ID}" --exit-status || {
+            CONCLUSION=$(gh run view "${RUN_ID}" --json conclusion --jq '.conclusion')
+            echo "::error::Builder workflow #${RUN_ID} finished with conclusion: ${CONCLUSION}"
+            exit 1
+          }
+          echo "::notice::Builder workflow #${RUN_ID} completed successfully"
