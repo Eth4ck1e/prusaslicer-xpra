@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-3-dev libwxgtk3.0-gtk3-dev \
     libgl1-mesa-dev libglu1-mesa-dev \
     libcurl4-openssl-dev libssl-dev \
-    libudev-dev libdbus-1-dev \
+    libudev-dev libdbus-1-dev libhidapi-dev \
     libwebkit2gtk-4.0-dev \
     libtbb-dev \
     zlib1g-dev libjpeg-dev libpng-dev libtiff-dev \
