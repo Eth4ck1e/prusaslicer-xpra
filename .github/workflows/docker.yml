@@ -8,10 +8,15 @@ on:
   schedule:
     - cron: '0 0 * * 5' # Every Friday at midnight
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Build PrusaSlicer (slow — run only on version bumps)"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   push_to_registry:
     name: Push Docker image to GitHub Container Registry
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
