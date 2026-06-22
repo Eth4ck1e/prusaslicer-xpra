@@ -2,10 +2,11 @@
 # build-and-test.sh — Local build + verification for prusaslicer-xpra
 #
 # Usage:
-#   ./build-and-test.sh                         # default: PRUSA_VERSION from Dockerfile
-#   ./build-and-test.sh version_2.9.6            # specific version
-#   ./build-and-test.sh --quick                  # skip builder, pull from GHCR
-#   ./build-and-test.sh --push                   # after verification, push tags
+#   ./scripts/build-and-test.sh                    # default: PRUSA_VERSION from Dockerfile
+#   ./scripts/build-and-test.sh 2.9.6              # specific version
+#   ./scripts/build-and-test.sh --quick            # skip builder build, pull from GHCR
+#   ./scripts/build-and-test.sh --quick 2.9.6      # both
+#   PLATFORM=linux/arm64 ./scripts/build-and-test.sh  # native arm64 build
 #
 # Stages:
 #   1. Pull or build the builder image
@@ -19,59 +20,74 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_DIR"
 
-# ── Config ──────────────────────────────────────────────────────────
-PRUSA_VERSION="${1:-$(grep '^ARG PRUSA_VERSION=' Dockerfile | head -1 | cut -d= -f2)}"
-PRUSA_TAG="version_${PRUSA_VERSION}"
-IMAGE_TAG="ghcr.io/eth4ck1e/prusaslicer-xpra:${PRUSA_VERSION}"
-BUILDER_TAG="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${PRUSA_VERSION}"
-HEALTH_TIMEOUT=120  # seconds to wait for container health
-CONTAINER_NAME="prusaslicer-test-${PRUSA_VERSION}"
+# ── Parse arguments ──────────────────────────────────────────────────
 SKIP_BUILDER=false
-DO_PUSH=false
+PRUSA_VERSION=""
 
 for arg in "$@"; do
   case "$arg" in
     --quick) SKIP_BUILDER=true ;;
-    --push)  DO_PUSH=true ;;
+    *)
+      if [ -z "$PRUSA_VERSION" ]; then
+        PRUSA_VERSION="$arg"
+      fi
+      ;;
   esac
 done
 
+# Platform: GitHub Actions builds amd64 by default.
+# On Apple Silicon (Colima), set PLATFORM=linux/arm64 and ensure the
+# builder image exists for that platform, or build the builder locally.
+PLATFORM="${PLATFORM:-linux/amd64}"
+
+# If no version specified, read from Dockerfile
+if [ -z "$PRUSA_VERSION" ]; then
+  PRUSA_VERSION="$(grep '^ARG PRUSA_VERSION=' Dockerfile | head -1 | cut -d= -f2)"
+fi
+
+PRUSA_TAG="version_${PRUSA_VERSION}"
+IMAGE_TAG="ghcr.io/eth4ck1e/prusaslicer-xpra:${PRUSA_VERSION}"
+BUILDER_TAG="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${PRUSA_VERSION}"
+HEALTH_TIMEOUT=120
+CONTAINER_NAME="prusaslicer-test-${PRUSA_VERSION}"
+
 echo "═══ prusaslicer-xpra local build & test ═══"
 echo "  Version:     ${PRUSA_VERSION}"
+echo "  Platform:    ${PLATFORM}"
 echo "  Builder tag: ${BUILDER_TAG}"
 echo "  Image tag:   ${IMAGE_TAG}"
-echo "  Skip builder: ${SKIP_BUILDER}"
+echo "  Quick mode:  ${SKIP_BUILDER}"
 echo ""
 
 # ── Stage 1: Builder image ──────────────────────────────────────────
 if [ "$SKIP_BUILDER" = false ]; then
-  # Check if builder already exists locally
   if docker image inspect "$BUILDER_TAG" &>/dev/null; then
     echo "✓ Builder image already exists locally"
   elif docker manifest inspect "$BUILDER_TAG" &>/dev/null 2>&1; then
-    echo "← Pulling builder image from GHCR..."
-    docker pull "$BUILDER_TAG"
+    echo "← Pulling builder image from GHCR (platform=${PLATFORM})..."
+    docker pull --platform "${PLATFORM}" "$BUILDER_TAG"
   else
-    echo "🔨 Building builder image (this will take 30-60 minutes)..."
-    docker buildx build \
+    echo "🔨 Building builder image (30-60 min)..."
+    docker build \
       -f Dockerfile.builder \
       --build-arg PRUSA_VERSION="${PRUSA_TAG}" \
       -t "$BUILDER_TAG" \
-      . 2>&1 | tail -5
+      .
     echo "✓ Builder image built"
   fi
 else
-  echo "→ Skipping builder (--quick), pulling from GHCR..."
-  docker pull "$BUILDER_TAG" 2>/dev/null || echo "⚠️ Could not pull builder, may fail"
+  echo "→ Quick mode: pulling builder from GHCR..."
+  docker pull --platform "${PLATFORM}" "$BUILDER_TAG" 2>/dev/null \
+    || echo "⚠️  Could not pull builder for ${PRUSA_VERSION}"
 fi
 
 # ── Stage 2: Runtime image ──────────────────────────────────────────
 echo ""
 echo "🔨 Building runtime image..."
-docker buildx build \
+docker build \
   --build-arg PRUSA_VERSION="${PRUSA_VERSION}" \
   -t "$IMAGE_TAG" \
-  . 2>&1 | tail -5
+  .
 echo "✓ Runtime image built"
 
 # ── Stage 3: Start container ────────────────────────────────────────
@@ -81,17 +97,18 @@ docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 
 docker run -d \
   --name "$CONTAINER_NAME" \
+  --platform "${PLATFORM}" \
   -e DISPLAY=:99 \
   -e ENABLE_VIRTUALGL=1 \
   -p 8180:8080 \
-  "$IMAGE_TAG" 2>&1
+  "$IMAGE_TAG"
 
 echo "✓ Container started: $CONTAINER_NAME"
 
 # ── Stage 4: Health check ───────────────────────────────────────────
 echo ""
-echo "⏳ Waiting up to ${HEALTH_TIMEOUT}s for container health..."
-echo "    (checking logs for startup signals)"
+echo "⏳ Waiting up to ${HEALTH_TIMEOUT}s for startup signals..."
+echo "    (monitoring container logs)"
 
 start_time=$(date +%s)
 health_ok=false
@@ -99,75 +116,74 @@ health_ok=false
 while true; do
   now=$(date +%s)
   elapsed=$((now - start_time))
-  
+
   if [ "$elapsed" -gt "$HEALTH_TIMEOUT" ]; then
-    echo "❌ TIMEOUT: Container did not become healthy within ${HEALTH_TIMEOUT}s"
+    echo "❌ TIMEOUT after ${HEALTH_TIMEOUT}s"
     echo ""
-    echo "=== Last 50 lines of container logs ==="
-    docker logs "$CONTAINER_NAME" --tail 50
+    echo "=== Container status ==="
+    docker inspect "$CONTAINER_NAME" --format 'Status={{.State.Status}} Exit={{.State.ExitCode}}' 2>/dev/null
     echo ""
-    echo "=== Running processes ==="
-    docker exec "$CONTAINER_NAME" ps aux 2>/dev/null || echo "(cannot exec)"
+    echo "=== Last 60 lines of container logs ==="
+    docker logs "$CONTAINER_NAME" --tail 60 2>&1 || true
+    echo ""
+    docker rm -f "$CONTAINER_NAME" &>/dev/null || true
     exit 1
   fi
-  
-  # Check if container is still running
+
   status=$(docker inspect "$CONTAINER_NAME" --format '{{.State.Status}}' 2>/dev/null || echo "dead")
   if [ "$status" = "exited" ]; then
     echo "❌ Container exited (crash loop detected)"
-    echo "Exit code: $(docker inspect "$CONTAINER_NAME" --format '{{.State.ExitCode}}')"
+    echo "  Exit code: $(docker inspect "$CONTAINER_NAME" --format '{{.State.ExitCode}}')"
     echo ""
-    echo "=== Last 50 lines of container logs ==="
-    docker logs "$CONTAINER_NAME" --tail 50
+    echo "=== Last 60 lines of container logs ==="
+    docker logs "$CONTAINER_NAME" --tail 60 2>&1 || true
+    echo ""
+    docker exec "$CONTAINER_NAME" ps aux 2>/dev/null || true
+    docker rm -f "$CONTAINER_NAME" &>/dev/null || true
     exit 1
   fi
-  
-  # Check for startup signals in logs
-  logs=$(docker logs "$CONTAINER_NAME" --tail 20 2>/dev/null || true)
-  
-  if echo "$logs" | grep -qi "xpra.*started\|prusa-slicer.*started\|listening on\|supervisord.*running\|HTTP server listening"; then
+
+  logs=$(docker logs "$CONTAINER_NAME" --tail 10 2>/dev/null || true)
+  if echo "$logs" | grep -qiE \
+    "xpra.*started|prusa-slicer.*started|listening on|supervisord.*running|HTTP.*listening"; then
     health_ok=true
-    echo "✅ Container is healthy! (detected at ${elapsed}s)"
+    echo "✅ Container healthy! (${elapsed}s)"
     break
   fi
-  
-  # Still waiting
+
   if [ $((elapsed % 10)) -eq 0 ]; then
-    echo "  ... waiting (${elapsed}s) - last log line: $(echo "$logs" | tail -1)"
+    last_line=$(echo "$logs" | tail -1)
+    echo "  ... waiting (${elapsed}s) last: ${last_line:0:80}"
   fi
-  
+
   sleep 2
 done
 
-# ── Stage 5: Quick smoke test ────────────────────────────────────────
+# ── Stage 5: Smoke tests ────────────────────────────────────────────
 echo ""
-echo "🧪 Running smoke tests..."
+echo "🧪 Smoke tests..."
 
-# Check process list
-echo -n "  Processes: "
-procs=$(docker exec "$CONTAINER_NAME" ps aux --no-headers 2>/dev/null | wc -l || echo "0")
-echo "${procs} running"
-
-# Check if prusa-slicer binary exists
 echo -n "  PrusaSlicer binary: "
 if docker exec "$CONTAINER_NAME" test -f /usr/local/bin/prusa-slicer 2>/dev/null; then
-  echo "✅ present"
+  echo "✅"
 else
   echo "❌ MISSING"
 fi
 
-# Check xpra port
-echo -n "  xpra listening: "
-if docker exec "$CONTAINER_NAME" sh -c "ss -tlnp | grep -q 8080" 2>/dev/null; then
-  echo "✅ port 8080"
+echo -n "  xpra port 8080: "
+if docker exec "$CONTAINER_NAME" sh -c "ss -tlnp 2>/dev/null | grep -q :8080" 2>/dev/null; then
+  echo "✅ listening"
 else
-  echo "❌ not detected (may use different port)"
+  echo "❌ not detected"
 fi
+
+echo -n "  Processes running: "
+procs=$(docker exec "$CONTAINER_NAME" ps aux --no-headers 2>/dev/null | wc -l || echo "0")
+echo "${procs}"
 
 echo ""
 echo "═══════════════════════════════════════════════"
 echo "✅  VERIFICATION PASSED for ${PRUSA_VERSION}"
 echo "═══════════════════════════════════════════════"
 
-# Cleanup
 docker rm -f "$CONTAINER_NAME" &>/dev/null || true
