@@ -61,24 +61,28 @@ jobs:
             echo "Builder image $IMAGE not found — will build it"
           fi
 
-      - name: Update version in Dockerfiles
+      - name: Commit version bump to release branch
         if: steps.check.outputs.update == 'true'
         run: |
           NEW_VERSION="${{ steps.latest.outputs.version }}"
           NEW_TAG="${{ steps.latest.outputs.tag }}"
+          BRANCH="release/v${NEW_VERSION}"
+
+          # Create a release branch from the current main state
+          git checkout -b "${BRANCH}"
+
           # Runtime Dockerfile uses bare version (e.g. 2.9.4)
           sed -i "s/^ARG PRUSA_VERSION=.*/ARG PRUSA_VERSION=${NEW_VERSION}/" Dockerfile
           # Builder Dockerfile uses full git tag (e.g. version_2.9.4)
           sed -i "s/^ARG PRUSA_VERSION=.*/ARG PRUSA_VERSION=${NEW_TAG}/" Dockerfile.builder
 
-      - name: Commit version bump
-        if: steps.check.outputs.update == 'true'
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Dockerfile Dockerfile.builder
-          git commit -m "chore: bump PrusaSlicer ${{ steps.current.outputs.version }} → ${{ steps.latest.outputs.version }} [skip ci]"
-          git push
+          git commit -m "chore: bump PrusaSlicer ${{ steps.current.outputs.version }} → ${NEW_VERSION} [skip ci]"
+          git push origin "${BRANCH}"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "Pushed version bump to ${BRANCH} (not main — requires manual verification and merge)"
 
       - name: Trigger builder workflow
         if: steps.check_image.outputs.builder_missing == 'true'
@@ -92,6 +96,7 @@ jobs:
             --jq '.[0].databaseId' \
             --limit 1 2>/dev/null || echo "0")
           echo "before=${BEFORE}" >> "$GITHUB_OUTPUT"
+          BRANCH="release/v${{ steps.latest.outputs.version }}"
           gh workflow run build-prusaslicer.yml \
             --ref main \
             -f prusa_version="${{ steps.check_image.outputs.target_tag }}"
