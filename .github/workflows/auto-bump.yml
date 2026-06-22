@@ -40,14 +40,22 @@ jobs:
             echo "Already up to date: ${{ steps.current.outputs.version }}"
           fi
 
-      - name: Check if builder image exists for new version
+      - name: Check if builder image exists for target version
         id: check_image
-        if: steps.check.outputs.update == 'true'
         run: |
-          IMAGE="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${{ steps.latest.outputs.version }}"
+          if [ "${{ steps.check.outputs.update }}" = "true" ]; then
+            VERSION="${{ steps.latest.outputs.version }}"
+            TAG="${{ steps.latest.outputs.tag }}"
+          else
+            VERSION="${{ steps.current.outputs.version }}"
+            TAG="version_${{ steps.current.outputs.version }}"
+          fi
+          echo "target_version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "target_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          IMAGE="ghcr.io/eth4ck1e/prusaslicer-xpra-builder:${VERSION}"
           if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
             echo "builder_missing=false" >> "$GITHUB_OUTPUT"
-            echo "✓ Builder image $IMAGE already exists — skipping builder workflow"
+            echo "✓ Builder image $IMAGE already exists"
           else
             echo "builder_missing=true" >> "$GITHUB_OUTPUT"
             echo "Builder image $IMAGE not found — will build it"
@@ -73,7 +81,7 @@ jobs:
           git push
 
       - name: Trigger builder workflow
-        if: steps.check.outputs.update == 'true' && steps.check_image.outputs.builder_missing == 'true'
+        if: steps.check_image.outputs.builder_missing == 'true'
         id: trigger
         run: |
           # Record the current latest run so the wait step can
@@ -86,10 +94,10 @@ jobs:
           echo "before=${BEFORE}" >> "$GITHUB_OUTPUT"
           gh workflow run build-prusaslicer.yml \
             --ref main \
-            -f prusa_version="${{ steps.latest.outputs.tag }}"
+            -f prusa_version="${{ steps.check_image.outputs.target_tag }}"
 
       - name: Wait for builder workflow to complete
-        if: steps.check.outputs.update == 'true' && steps.check_image.outputs.builder_missing == 'true'
+        if: steps.check_image.outputs.builder_missing == 'true'
         run: |
           BEFORE="${{ steps.trigger.outputs.before }}"
           echo "Pre-dispatch latest run: ${BEFORE}"
