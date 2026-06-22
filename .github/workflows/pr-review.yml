@@ -1,0 +1,51 @@
+name: PR Review — Automated Checklist
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - LICENSE
+      - .gitignore
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  automated_review:
+    name: Run code review checklist
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Check out repo (base branch — safe for pull_request_target)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run automated PR review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          python3 .github/scripts/pr-review.py
+
+      - name: Print review outcome
+        if: always()
+        run: |
+          echo "📋 PR review completed for ${{ github.repository }}#${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
