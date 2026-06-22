@@ -27,10 +27,10 @@ jobs:
     if: github.event_name == 'pull_request_target' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Check out repo
+      - name: Check out repo (base branch — safe for pull_request_target)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
