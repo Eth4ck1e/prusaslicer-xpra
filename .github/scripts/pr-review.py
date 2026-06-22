@@ -480,6 +480,54 @@ def todo_count_in(findings: list) -> int:
     return sum(1 for f in findings if "TODO" in f.message or "FIXME" in f.message)
 
 
+def serialize_findings(findings: list) -> list:
+    """Serialize Finding objects to plain dicts for JSON output."""
+    return [
+        {
+            "severity": f.severity,
+            "file_path": f.file_path,
+            "line": f.line,
+            "message": f.message,
+            "suggestion": f.suggestion,
+        }
+        for f in findings
+    ]
+
+
+def write_review_result(findings: list, verdict: str, repo: str, pr_number: int):
+    """Write structured review result to a JSON file for the feedback loop."""
+    criticals = [f for f in findings if f.severity == "critical"]
+    warnings = [f for f in findings if f.severity == "warning"]
+
+    if criticals:
+        review_status = "changes_requested"
+    elif warnings:
+        review_status = "changes_requested"
+    else:
+        review_status = "approved"
+
+    result = {
+        "review_status": review_status,
+        "verdict": verdict,
+        "critical_count": len(criticals),
+        "warning_count": len([f for f in findings if f.severity == "warning"]),
+        "suggestion_count": len([f for f in findings if f.severity == "suggestion"]),
+        "total_findings": len(findings),
+        "repo": repo,
+        "pr_number": pr_number,
+        "findings": serialize_findings(criticals + warnings),
+    }
+
+    # Determine the output path: use GITHUB_OUTPUT env var dir, or default
+    output_dir = os.environ.get("GITHUB_WORKSPACE", ".")
+    result_path = os.path.join(output_dir, ".github/review_result.json")
+    os.makedirs(os.path.dirname(result_path), exist_ok=True)
+    with open(result_path, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"📝 Review result written to {result_path}")
+    return result_path
+
+
 # ── PR posting ──────────────────────────────────────────────────────────────
 
 def post_pr_comment(repo: str, pr_number: int, body: str) -> bool:
@@ -566,9 +614,24 @@ def main():
         deletions=deletions,
     )
 
+    # Determine verdict based on same logic as generate_comment
+    criticals = [f for f in findings if f.severity == "critical"]
+    warnings = [f for f in findings if f.severity == "warning"]
+    suggestions = [f for f in findings if f.severity == "suggestion"]
+    if criticals:
+        verdict = "Changes Requested 🔴"
+    elif warnings:
+        verdict = "Changes Requested ⚠️"
+    elif suggestions:
+        verdict = "Reviewed 💬"
+    else:
+        verdict = "Approved ✅"
+
     success = post_pr_comment(repo, pr_number, comment)
     if success:
         print(f"\n✅ Review posted to PR #{pr_number}")
+        # Write structured result for the feedback loop
+        write_review_result(findings, verdict, repo, pr_number)
     else:
         print(f"\n❌ Failed to post review to PR #{pr_number}", file=sys.stderr)
         sys.exit(1)
