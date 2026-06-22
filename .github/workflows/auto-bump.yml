@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v5
+        with:
+          ref: dev
 
       - name: Get latest PrusaSlicer release tag
         id: latest
@@ -79,10 +81,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Dockerfile Dockerfile.builder
-          git commit -m "chore: bump PrusaSlicer ${{ steps.current.outputs.version }} → ${NEW_VERSION} [skip ci]"
-          git push origin "${BRANCH}"
+          git commit -m "chore: bump PrusaSlicer ${{ steps.current.outputs.version }} → ${{ steps.latest.outputs.version }} [skip ci]"
+          git push origin dev
           echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
-          echo "Pushed version bump to ${BRANCH} (not main — requires manual verification and merge)"
+          echo "Pushed version bump to ${BRANCH} via dev (requires PR from dev→main)"
 
       - name: Trigger builder workflow
         if: steps.check_image.outputs.builder_missing == 'true'
@@ -96,9 +98,8 @@ jobs:
             --jq '.[0].databaseId' \
             --limit 1 2>/dev/null || echo "0")
           echo "before=${BEFORE}" >> "$GITHUB_OUTPUT"
-          BRANCH="release/v${{ steps.latest.outputs.version }}"
           gh workflow run build-prusaslicer.yml \
-            --ref main \
+            --ref dev \
             -f prusa_version="${{ steps.check_image.outputs.target_tag }}"
 
       - name: Wait for builder workflow to complete
